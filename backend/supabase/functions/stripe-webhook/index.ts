@@ -1,6 +1,7 @@
 // Stripe → licence store.
 // Deploy with verify_jwt=false (Stripe signs the request; we verify that signature).
-// Secrets: STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, FROM_EMAIL (Edge Functions → Secrets).
+// Secrets: STRIPE_WEBHOOK_SECRET (live endpoint), STRIPE_WEBHOOK_SECRET_TEST (sandbox endpoint, optional),
+//          RESEND_API_KEY, FROM_EMAIL (Edge Functions → Secrets).
 // No Stripe API key: signature verification is local, and every field we need arrives inside the events.
 //
 // Subscribed events:
@@ -15,7 +16,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const stripe = new Stripe("sk_unused_signature_verification_only", { apiVersion: "2025-02-24.acacia" });
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
+const WEBHOOK_SECRETS = [Deno.env.get("STRIPE_WEBHOOK_SECRET"), Deno.env.get("STRIPE_WEBHOOK_SECRET_TEST")].filter((x): x is string => !!x);
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "Nudged <hello@nudged.pro>";
 
@@ -129,16 +130,18 @@ async function handle(event: Stripe.Event) {
 }
 
 Deno.serve(async (req) => {
-  if (!WEBHOOK_SECRET) return new Response("webhook secret not configured", { status: 500 });
+  if (WEBHOOK_SECRETS.length === 0) return new Response("webhook secret not configured", { status: 500 });
   const sig = req.headers.get("stripe-signature");
   if (!sig) return new Response("missing signature", { status: 400 });
   const raw = await req.text();
-  let event: Stripe.Event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(raw, sig, WEBHOOK_SECRET);
-  } catch (e) {
-    return new Response(`bad signature: ${(e as Error).message}`, { status: 400 });
+  // One function serves both the live and the sandbox endpoint; each has its own signing secret.
+  let event: Stripe.Event | null = null;
+  let sigErr = "";
+  for (const secret of WEBHOOK_SECRETS) {
+    try { event = await stripe.webhooks.constructEventAsync(raw, sig, secret); break; }
+    catch (e) { sigErr = (e as Error).message; }
   }
+  if (!event) return new Response(`bad signature: ${sigErr}`, { status: 400 });
 
   // Idempotency: an event is marked seen only after it was fully processed,
   // so a failed attempt is retried by Stripe instead of being swallowed.
