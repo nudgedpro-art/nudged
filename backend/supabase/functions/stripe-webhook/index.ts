@@ -15,8 +15,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const stripe = new Stripe("sk_unused_signature_verification_only", { apiVersion: "2025-02-24.acacia" });
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const WEBHOOK_SECRET = Deno.env.get("NUDGED_STRIPE_WEBHOOK_SECRET")!;
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const WEBHOOK_SECRET = Deno.env.get("NUDGED_STRIPE_WEBHOOK_SECRET") ?? "";
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const FROM_EMAIL = Deno.env.get("NUDGED_FROM_EMAIL") ?? "Nudged <hello@nudged.pro>";
 
 function planFor(sub: Stripe.Subscription): string {
@@ -37,8 +37,9 @@ async function sendKeyEmail(to: string, key: string) {
     ``,
     `Setup asks for the key, connects Gmail and Google Calendar, publishes your private board, and starts the hourly routine.`,
     ``,
-    `Manage or cancel any time: https://nudged.pro/account`,
+    `Manage or cancel any time from the link in your Stripe receipt.`,
   ].join("\n");
+  if (!RESEND_API_KEY) { console.error("RESEND_API_KEY missing; key not emailed", { to }); return; }
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${RESEND_API_KEY}`, "content-type": "application/json" },
@@ -48,6 +49,7 @@ async function sendKeyEmail(to: string, key: string) {
 }
 
 Deno.serve(async (req) => {
+  if (!WEBHOOK_SECRET) return new Response("webhook secret not configured", { status: 500 });
   const sig = req.headers.get("stripe-signature");
   if (!sig) return new Response("missing signature", { status: 400 });
   const raw = await req.text();
