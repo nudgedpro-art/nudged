@@ -3,8 +3,23 @@
   "displayName": "Nudged",
   "version": "1.0.1",
   "description": "A post-it that travels with you. Reads your email for promises and dated plans, keeps a living post-it board, puts confirmed items on Google Calendar, and nudges you when the other side goes quiet.",
-  "author": { "name": "Sonal Agarwal", "email": "hello@nudged.pro" },
+  "author": {
+    "name": "Sonal Agarwal",
+    "email": "hello@nudged.pro"
+  },
   "homepage": "https://nudged.pro",
   "license": "Proprietary",
-  "keywords": ["email", "calendar", "follow-up", "reminders", "gmail", "post-it"]
+  "keywords": [
+    "email",
+    "calendar",
+    "follow-up",
+    "reminders",
+    "gmail",
+    "post-it"
+  ],
+  "repository": "https://github.com/nudgedpro-art/nudged",
+  "privacyPolicyUrl": "https://nudged.pro/privacy.html",
+  "termsOfServiceUrl": "https://nudged.pro/terms.html",
+  "supportUrl": "mailto:hello@nudged.pro",
+  "documentationUrl": "https://github.com/nudgedpro-art/nudged#readme"
 }
