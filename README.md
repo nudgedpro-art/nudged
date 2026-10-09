@@ -20,7 +20,7 @@ site/index.html                      landing page with the Stripe Payment Link
 ## How a customer experiences it
 
 1. Subscribes on the site (Stripe Payment Link). The webhook issues a key like `ND-K7Q2-M9XW-4RJP-NC3D` and emails it.
-2. In Claude Code: `/plugin marketplace add sonaltoday/nudged`, then `/plugin install nudged@nudged`.
+2. In Claude Code: `/plugin marketplace add nudgedpro/nudged`, then `/plugin install nudged@nudged`.
 3. In the Claude desktop app's Code tab, `/nudged:setup` checks the key, confirms Gmail and Calendar are connected, publishes their private board, pre-approves the routine's tools, and creates the hourly routine `nudged-hourly`. One Run now click records the approvals.
 4. Every hour the routine loads `nudged:run`, which checks the licence first and then does the work. A lapsed key stops the routine with a clear message.
 

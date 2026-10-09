@@ -31,7 +31,7 @@ async function sendKeyEmail(to: string, key: string) {
     `Your licence key: ${key}`,
     ``,
     `To install, open the Claude desktop app, go to the Code tab, and run:`,
-    `  /plugin marketplace add sonaltoday/nudged`,
+    `  /plugin marketplace add nudgedpro/nudged`,
     `  /plugin install nudged@nudged`,
     `  /nudged:setup`,
     ``,
