@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nudged board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{--board:#e4e6df;--ink:#2a2f2b;--muted:#6b7268;--paper:#fff176;--need:#ffab91;--cal:#b3e5fc;--btn:#2a2f2b;--btn-ink:#f6f7f3;--danger:#b23a2e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--board);color:var(--ink);font:17px/1.5 "Source Sans 3",system-ui,sans-serif;padding:24px 16px 64px}
+main{max-width:860px;margin:0 auto}
+h1{font:700 40px/1.1 Kalam,cursive;margin:8px 0}
+h2{font:700 22px/1.2 Kalam,cursive;margin:28px 0 10px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.btn{display:inline-block;background:var(--btn);color:var(--btn-ink);border:0;cursor:pointer;text-decoration:none;padding:10px 16px;border-radius:10px;font:600 16px "Source Sans 3",system-ui,sans-serif}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.danger{background:transparent;color:var(--danger);border:1.5px solid var(--danger)}
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.n{background:var(--paper);padding:14px 16px;box-shadow:2px 4px 10px rgba(40,45,35,.28);transform:rotate(-.6deg);position:relative}
+.n.need{background:var(--need);transform:rotate(.6deg)} .n.cal{background:var(--cal)}
+.n b{display:block;font:700 19px/1.2 Kalam,cursive;margin-bottom:4px}
+.n small{display:block;font-size:12.5px;color:#6f6438;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.n p{margin:6px 0;font-size:15px}
+.n .acts{display:flex;gap:8px;margin-top:10px}
+.n .acts button{font:600 13px "Source Sans 3",system-ui;border:1px solid rgba(0,0,0,.25);background:rgba(255,255,255,.5);border-radius:7px;padding:4px 9px;cursor:pointer}
+.n a{color:inherit}
+.fine{color:var(--muted);font-size:14px;max-width:60ch}
+.empty{background:#f6f7f3;padding:16px;border-radius:10px;color:var(--muted)}
+#msg{min-height:1.4em;color:var(--muted);font-size:14px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Nudged</h1>
+    <div id="who" class="fine"></div>
+  </div>
+
+  <section id="signedout">
+    <p class="fine" style="max-width:48ch">Connect the Google account whose mail Nudged should watch. It reads your mail inside our service, keeps only the extracted notes, and never sends, deletes or labels anything.</p>
+    <p><a class="btn" id="connect" href="https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/google-auth/start?ret=web">Connect Google</a></p>
+    <p class="fine">You'll be asked for two permissions: read your Gmail and manage your calendar events. 14-day free trial, then CA$9/month. <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></p>
+  </section>
+
+  <section id="signedin" class="hidden">
+    <div class="top">
+      <div id="msg"></div>
+      <div>
+        <button class="btn ghost" id="sync">Sync now</button>
+        <button class="btn ghost" id="signout">Sign out</button>
+      </div>
+    </div>
+    <h2>Needs you</h2><div class="notes" id="g-need"></div>
+    <h2>Waiting on them</h2><div class="notes" id="g-wait"></div>
+    <h2>On the calendar</h2><div class="notes" id="g-cal"></div>
+    <h2>Closed</h2><div class="notes" id="g-closed"></div>
+    <p class="fine" style="margin-top:40px">Licence: <span id="lic"></span></p>
+    <p><button class="btn danger" id="disconnect">Disconnect Google</button> <button class="btn danger" id="delete">Delete my account and data</button></p>
+    <p class="fine">Deleting removes every note, your Google connection and your Nudged account, and revokes Nudged's access at Google. Cancel any paid subscription first from your Stripe receipt.</p>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL = "https://sdtbdrrcppjeilwhvwbw.supabase.co";
+const SB_KEY = "sb_publishable_xd6rNNCwKoYTC3KzXdisng_keRgpSxK";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function fn(name, body) {
+  const { data: { session } } = await sb.auth.getSession();
+  const r = await fetch(`${SB_URL}/functions/v1/${name}`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token ?? ""}` }, body: JSON.stringify(body ?? {}) });
+  return r.json();
+}
+
+function card(n) {
+  const cls = n.status === "scheduled" ? "cal" : (n.needs_me ? "need" : "");
+  const when = n.expected ? `${n.expected}${n.expected_end ? " → " + n.expected_end : ""}${n.time ? " " + n.time : ""}` : "no date yet";
+  const tag = n.status === "done" ? "Done" : n.status === "dismissed" ? "Dismissed" : n.status === "cancelled" ? "Cancelled" : n.status === "scheduled" ? "On calendar" : (n.needs_me ? "Needs you" : "Waiting on them");
+  const last = (n.clips || []).slice(-1)[0];
+  const open = n.status === "pending" || n.status === "scheduled";
+  return `<div class="n ${cls}" data-id="${n.id}">
+    <small>${tag}</small><b>${esc(n.title)}</b>
+    <p>${esc(when)}${n.who ? " · " + esc(n.who) : ""}</p>
+    <p>${esc(n.note)}</p>
+    ${last ? `<p class="fine">${esc(last.at)} ${esc(last.from)}: ${esc(last.text)}</p>` : ""}
+    <p class="fine">${n.event_url ? `<a href="${esc(n.event_url)}" target="_blank" rel="noopener">Calendar</a> · ` : ""}${n.source_url ? `<a href="${esc(n.source_url)}" target="_blank" rel="noopener">Email</a>` : ""}</p>
+    <div class="acts">${open ? `<button data-act="done">Done</button><button data-act="dismissed">Dismiss</button>` : `<button data-act="reopen">Reopen</button>`}</div>
+  </div>`;
+}
+
+async function render() {
+  const { data: notes, error } = await sb.from("notes").select("*").order("updated_at", { ascending: false });
+  if (error) { $("msg").textContent = "Could not load notes: " + error.message; return; }
+  const g = { need: [], wait: [], cal: [], closed: [] };
+  for (const n of notes) {
+    if (n.status === "scheduled") g.cal.push(n);
+    else if (n.status === "pending") (n.needs_me ? g.need : g.wait).push(n);
+    else g.closed.push(n);
+  }
+  for (const k of Object.keys(g)) $("g-" + k).innerHTML = g[k].length ? g[k].map(card).join("") : `<div class="empty">Nothing here.</div>`;
+  const { data: lic } = await sb.from("my_license").select("*").maybeSingle();
+  $("lic").textContent = lic ? `${lic.plan}, ${lic.status}${lic.current_period_end ? ", until " + lic.current_period_end.slice(0, 10) : ""}` : "none";
+  const { data: conn } = await sb.from("google_connections").select("email,status,last_sync_at,last_error").maybeSingle();
+  $("msg").textContent = conn ? `Google: ${conn.email} (${conn.status})${conn.last_sync_at ? ", last sync " + new Date(conn.last_sync_at).toLocaleString() : ", first sync pending"}${conn.last_error ? " — " + conn.last_error : ""}` : "No Google connection.";
+}
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  const id = b.closest(".n").dataset.id, act = b.dataset.act;
+  const patch = act === "reopen" ? { status: "pending", closed_at: null } : { status: act, closed_at: new Date().toISOString() };
+  const { error } = await sb.from("notes").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) alert(error.message); else render();
+});
+$("sync").onclick = async () => { $("msg").textContent = "Syncing…"; const r = await fn("nudged-sync"); $("msg").textContent = r.ok ? "Synced." : (r.error || "Sync failed"); render(); };
+$("signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$("disconnect").onclick = async () => { if (!confirm("Disconnect Google? Nudged stops reading mail; your notes stay.")) return; await fn("google-auth/disconnect"); render(); };
+$("delete").onclick = async () => { if (!confirm("Delete your Nudged account and all its data? This cannot be undone.")) return; const r = await fn("account-delete"); alert(r.message || r.error); await sb.auth.signOut(); location.reload(); };
+
+(async () => {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("token_hash")) {
+    const { error } = await sb.auth.verifyOtp({ token_hash: h.get("token_hash"), type: "magiclink" });
+    history.replaceState(null, "", location.pathname);
+    if (error) { $("who").textContent = "Sign-in link failed: " + error.message; }
+  }
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  $("signedout").classList.add("hidden"); $("signedin").classList.remove("hidden");
+  $("who").textContent = session.user.email;
+  render();
+})();
+</script>
+</body>
+</html>
