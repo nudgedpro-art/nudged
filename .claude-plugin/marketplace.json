@@ -1,12 +1,12 @@
 {
-  "name": "travelling-postits",
-  "owner": { "name": "Sonal Agarwal", "email": "hello@travellingpostits.com", "url": "https://travellingpostits.com" },
+  "name": "nudged",
+  "owner": { "name": "Sonal Agarwal", "email": "hello@nudged.pro", "url": "https://nudged.pro" },
   "plugins": [
     {
-      "name": "postits",
-      "source": "./plugins/postits",
-      "displayName": "Travelling Post-its",
-      "description": "Promises and dated plans from your email, as living post-its on a board and on your calendar. Subscription required: https://travellingpostits.com",
+      "name": "nudged",
+      "source": "./plugins/nudged",
+      "displayName": "Nudged",
+      "description": "Promises and dated plans from your email, as living post-its on a board and on your calendar. Subscription required: https://nudged.pro",
       "version": "0.1.0",
       "category": "productivity",
       "tags": ["email", "calendar", "follow-up"]

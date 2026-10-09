@@ -1,6 +1,6 @@
 ---
 name: run
-description: One run of the Travelling Post-its routine. Reads new email for promises and dated plans, keeps the post-it board current, puts confirmed items on Google Calendar, nudges on silence. Invoked hourly by the scheduled task that /postits:setup created.
+description: One run of the Nudged routine. Reads new email for promises and dated plans, keeps the post-it board current, puts confirmed items on Google Calendar, nudges on silence. Invoked hourly by the scheduled task that /nudged:setup created.
 allowed-tools: Bash, ToolSearch, WebFetch
 ---
 
@@ -11,16 +11,16 @@ You are the "post-it that travels" routine for the person running this session. 
 Read the config written by setup:
 
 ```bash
-cat ~/.claude/postits/config.json
+cat ~/.claude/nudged/config.json
 ```
 
-It holds `license_key`, `board_url`, `calendar_id`, `timezone`, `email`. If the file is missing, stop and output exactly: `Post-its: not set up. Run /postits:setup first.`
+It holds `license_key`, `board_url`, `calendar_id`, `timezone`, `email`. If the file is missing, stop and output exactly: `Nudged: not set up. Run /nudged:setup first.`
 
 Check the licence with WebFetch (fall back to `curl -s` in Bash if WebFetch is unavailable):
 
 `https://LICENSE_ENDPOINT/license-check?key=<license_key>`
 
-The reply is JSON `{ "valid": true|false, "plan": "...", "renews": "YYYY-MM-DD", "message": "..." }`. If `valid` is false, or the endpoint cannot be reached three times in a row, stop and output `Post-its: licence inactive (<message>). Manage it at https://travellingpostits.com/account`. Never work around an inactive licence.
+The reply is JSON `{ "valid": true|false, "plan": "...", "renews": "YYYY-MM-DD", "message": "..." }`. If `valid` is false, or the endpoint cannot be reached three times in a row, stop and output `Nudged: licence inactive (<message>). Manage it at https://nudged.pro/account`. Never work around an inactive licence.
 
 ## Fixed ids
 
@@ -87,4 +87,4 @@ Clips are paraphrases, never pasted email bodies. Keep titles neutral for medica
 
 ## Output
 
-At most six lines: `Created: <n> (<titles>)`, `Updated: <n> (<titles>)`, `Nudges: <n> (<titles>)`, `Skipped connector errors: <n>` only if nonzero. If nothing happened: the single line `Post-its: nothing new this run.`
+At most six lines: `Created: <n> (<titles>)`, `Updated: <n> (<titles>)`, `Nudges: <n> (<titles>)`, `Skipped connector errors: <n>` only if nonzero. If nothing happened: the single line `Nudged: nothing new this run.`

@@ -1,4 +1,4 @@
-<title>Travelling Post-its</title>
+<title>Nudged</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
 /* Layout: a felt board of paper notes; colour = state, marker type = the note, sans = the chrome. */
@@ -96,7 +96,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
 
 <div class="wrap">
   <header>
-    <h1>Travelling Post-its</h1>
+    <h1>Nudged</h1>
     <span class="sub" id="sub">Loading your board…</span>
   </header>
   <div class="toolbar" id="filters" role="group" aria-label="Show">
@@ -121,7 +121,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
   var $=function(s){return document.querySelector(s)};
   var board=$("#board"), sub=$("#sub"), filters=$("#filters");
   var db=null, uid=null, canWrite=null, items=[], filter="open", open=null;
-  try{ var f=localStorage.getItem("postit.filter"); if(f) filter=f; }catch(e){}
+  try{ var f=localStorage.getItem("nudged.filter"); if(f) filter=f; }catch(e){}
   filters.querySelectorAll(".chip").forEach(function(c){ c.setAttribute("aria-pressed", String(c.dataset.f===filter)); });
 
   var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -191,7 +191,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
 
   filters.addEventListener("click", function(ev){
     var c=ev.target.closest(".chip"); if(!c) return;
-    filter=c.dataset.f; try{ localStorage.setItem("postit.filter",filter); }catch(e){}
+    filter=c.dataset.f; try{ localStorage.setItem("nudged.filter",filter); }catch(e){}
     filters.querySelectorAll(".chip").forEach(function(x){ x.setAttribute("aria-pressed", String(x===c)); });
     render();
   });

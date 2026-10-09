@@ -4,7 +4,7 @@ description: Show what is on the post-it board right now, add a post-it to watch
 allowed-tools: Bash, ToolSearch
 ---
 
-Read `~/.claude/postits/config.json` for `board_url`. If missing, say `Run /postits:setup first.` and stop.
+Read `~/.claude/nudged/config.json` for `board_url`. If missing, say `Run /nudged:setup first.` and stop.
 
 Load ArtifactData with ToolSearch (`select:ArtifactData`).
 

@@ -1,11 +1,11 @@
--- Travelling Post-its licence store. One row per paying customer.
+-- Nudged licence store. One row per paying customer.
 -- Keys are issued by the stripe-webhook function and checked by license-check.
 
 create extension if not exists pgcrypto;
 
 create table if not exists public.licenses (
   id                    uuid primary key default gen_random_uuid(),
-  license_key           text not null unique,              -- TP-XXXX-XXXX-XXXX-XXXX
+  license_key           text not null unique,              -- ND-XXXX-XXXX-XXXX-XXXX
   email                 text not null,
   stripe_customer_id    text unique,
   stripe_subscription_id text unique,
@@ -37,7 +37,7 @@ create or replace function public.gen_license_key() returns text
 language plpgsql as $$
 declare
   alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  out text := 'TP';
+  out text := 'ND';
   i int;
 begin
   for i in 1..16 loop

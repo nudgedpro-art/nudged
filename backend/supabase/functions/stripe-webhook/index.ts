@@ -15,7 +15,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "202
 const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "Travelling Post-its <hello@travellingpostits.com>";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "Nudged <hello@nudged.pro>";
 
 function planFor(sub: Stripe.Subscription): string {
   const interval = sub.items.data[0]?.price?.recurring?.interval;
@@ -24,23 +24,23 @@ function planFor(sub: Stripe.Subscription): string {
 
 async function sendKeyEmail(to: string, key: string) {
   const body = [
-    `Thanks for subscribing to Travelling Post-its.`,
+    `Thanks for subscribing to Nudged.`,
     ``,
     `Your licence key: ${key}`,
     ``,
     `To install, open Claude Code (desktop app or terminal) and run:`,
-    `  /plugin marketplace add sonaltoday/travelling-postits`,
-    `  /plugin install postits@travelling-postits`,
-    `  /postits:setup`,
+    `  /plugin marketplace add sonaltoday/nudged`,
+    `  /plugin install nudged@nudged`,
+    `  /nudged:setup`,
     ``,
     `Setup asks for the key, connects Gmail and Google Calendar, publishes your private board, and starts the hourly routine.`,
     ``,
-    `Manage or cancel any time: https://travellingpostits.com/account`,
+    `Manage or cancel any time: https://nudged.pro/account`,
   ].join("\n");
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: `Bearer ${RESEND_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: FROM_EMAIL, to, subject: "Your Travelling Post-its licence key", text: body }),
+    body: JSON.stringify({ from: FROM_EMAIL, to, subject: "Your Nudged licence key", text: body }),
   });
   if (!r.ok) console.error("resend failed", r.status, await r.text());
 }

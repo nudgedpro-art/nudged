@@ -1,4 +1,4 @@
-// GET /license-check?key=TP-XXXX-XXXX-XXXX-XXXX
+// GET /license-check?key=ND-XXXX-XXXX-XXXX-XXXX
 // Called by the plugin's run and setup skills. Read-only apart from a usage stamp.
 // Deploy with verify_jwt=false: the caller is a Claude session with no Supabase user.
 
@@ -9,7 +9,7 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
-const KEY_RE = /^TP-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
+const KEY_RE = /^ND-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
 const GRACE_DAYS = 3; // keep running a little past a failed renewal
 
 function json(body: unknown, status = 200) {
