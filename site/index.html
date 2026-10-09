@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Travelling Post-its</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{--board:#e4e6df;--ink:#2a2f2b;--muted:#6b7268;--paper:#fff176;--need:#ffab91;--cal:#b3e5fc;--btn:#2a2f2b;--btn-ink:#f6f7f3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--board);color:var(--ink);font:17px/1.5 "Source Sans 3",system-ui,sans-serif;padding:24px 16px 64px}
+main{max-width:760px;margin:0 auto}
+h1{font:700 44px/1.1 Kalam,cursive;margin:24px 0 8px}
+.lede{font-size:21px;max-width:40ch;margin:0 0 28px}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin:28px 0}
+.n{background:var(--paper);padding:16px;box-shadow:2px 4px 10px rgba(40,45,35,.28);transform:rotate(-1deg)}
+.n:nth-child(2){background:var(--need);transform:rotate(1deg)} .n:nth-child(3){background:var(--cal);transform:rotate(-.5deg)}
+.n b{display:block;font:700 19px/1.2 Kalam,cursive;margin-bottom:4px}
+.n small{display:block;font-size:13px;color:#6f6438;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.how{margin:32px 0}
+.how li{margin-bottom:8px}
+.price{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:28px 0}
+.price .amt{font:700 40px/1 Kalam,cursive}
+.btn{display:inline-block;background:var(--btn);color:var(--btn-ink);text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600}
+.fine{color:var(--muted);font-size:14px;max-width:60ch}
+code{background:#f6f7f3;padding:2px 6px;border-radius:4px;font-size:15px}
+</style>
+</head>
+<body>
+<main>
+  <h1>A post-it that travels with you.</h1>
+  <p class="lede">You reply "deliver Friday" and forget. Someone says "cottage weekend Oct 10". Travelling Post-its reads your email, keeps one living note per promise or plan, puts the confirmed ones on your calendar, and nudges you when the other side goes quiet.</p>
+
+  <div class="notes">
+    <div class="n"><small>Waiting on them</small><b>Chair delivery from Homesense</b>Fri Oct 17 · they proposed it, you said yes, no confirmation yet.</div>
+    <div class="n"><small>Needs you</small><b>Send the signed agreement to Glenda</b>Promised Thursday. Overdue.</div>
+    <div class="n"><small>On calendar</small><b>Cottage weekend</b>Oct 10–12 · 6 clips: who's coming, what to bring, arrival times.</div>
+  </div>
+
+  <div class="price">
+    <span class="amt">$9/month</span>
+    <a class="btn" href="STRIPE_PAYMENT_LINK">Subscribe</a>
+    <span class="fine">Cancel any time. Needs a Claude Pro, Max or Team plan: the routine runs inside your own Claude, with your own Gmail and Calendar connections. Your mail never touches our servers.</span>
+  </div>
+
+  <div class="how">
+    <h2>Install in three lines</h2>
+    <ol>
+      <li>Subscribe above. Your licence key arrives by email.</li>
+      <li>In Claude Code: <code>/plugin marketplace add sonaltoday/travelling-postits</code> then <code>/plugin install postits@travelling-postits</code></li>
+      <li>Run <code>/postits:setup</code>, paste the key, and the hourly routine starts.</li>
+    </ol>
+  </div>
+
+  <p class="fine">Travelling Post-its never sends email on your behalf, never deletes a calendar event, and stores nothing but your licence key and billing status. Manage your subscription at <a href="STRIPE_CUSTOMER_PORTAL_LINK">your account</a>. Questions: hello@travellingpostits.com</p>
+</main>
+</body>
+</html>

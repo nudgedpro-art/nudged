@@ -1,0 +1,15 @@
+{
+  "name": "travelling-postits",
+  "owner": { "name": "Sonal Agarwal", "email": "hello@travellingpostits.com", "url": "https://travellingpostits.com" },
+  "plugins": [
+    {
+      "name": "postits",
+      "source": "./plugins/postits",
+      "displayName": "Travelling Post-its",
+      "description": "Promises and dated plans from your email, as living post-its on a board and on your calendar. Subscription required: https://travellingpostits.com",
+      "version": "0.1.0",
+      "category": "productivity",
+      "tags": ["email", "calendar", "follow-up"]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "postits",
+  "displayName": "Travelling Post-its",
+  "version": "0.1.0",
+  "description": "A post-it that travels with you. Reads your email for promises and dated plans, keeps a living post-it board, puts confirmed items on Google Calendar, and nudges you when the other side goes quiet.",
+  "author": { "name": "Sonal Agarwal", "email": "hello@travellingpostits.com" },
+  "homepage": "https://travellingpostits.com",
+  "license": "Proprietary",
+  "keywords": ["email", "calendar", "follow-up", "reminders", "gmail", "post-it"]
+}

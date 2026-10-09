@@ -1,0 +1,285 @@
+<title>Travelling Post-its</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: a felt board of paper notes; colour = state, marker type = the note, sans = the chrome. */
+:root{
+  --board:#e4e6df; --board-ink:#2a2f2b; --board-muted:#6b7268; --board-line:#cfd3c9;
+  --chip:#f6f7f3; --chip-on:#2a2f2b; --chip-on-ink:#f6f7f3;
+  --paper-wait:#fff176; --paper-need:#ffab91; --paper-cal:#b3e5fc; --paper-done:#d8dbd3; --paper-manual:#c5e1a5;
+  --paper-ink:#2a2412; --paper-muted:#6f6438; --paper-shadow:rgba(40,45,35,.28);
+  --danger:#b3261e; --ok:#2e7d32; --focus:#1a73e8;
+  --sheet:#fbfbf8; --sheet-ink:#2a2f2b; --sheet-line:#dfe2d9;
+  --display:"Kalam","Segoe Print","Bradley Hand",cursive;
+  --sans:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --board:#1f2420; --board-ink:#e7e9e2; --board-muted:#9aa196; --board-line:#343a34;
+  --chip:#2a302b; --chip-on:#e7e9e2; --chip-on-ink:#1f2420;
+  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#8f958a; --paper-manual:#aacf8c;
+  --paper-ink:#221d0c; --paper-muted:#5d5330; --paper-shadow:rgba(0,0,0,.55);
+  --danger:#ff8a80; --ok:#81c784; --focus:#8ab4f8;
+  --sheet:#262b27; --sheet-ink:#e7e9e2; --sheet-line:#3a403a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --board:#1f2420; --board-ink:#e7e9e2; --board-muted:#9aa196; --board-line:#343a34;
+  --chip:#2a302b; --chip-on:#e7e9e2; --chip-on-ink:#1f2420;
+  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#8f958a; --paper-manual:#aacf8c;
+  --paper-ink:#221d0c; --paper-muted:#5d5330; --paper-shadow:rgba(0,0,0,.55);
+  --danger:#ff8a80; --ok:#81c784; --focus:#8ab4f8;
+  --sheet:#262b27; --sheet-ink:#e7e9e2; --sheet-line:#3a403a; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--board);color:var(--board-ink);font-family:var(--sans);font-size:15px;line-height:1.4;
+  padding-inline:16px;padding-block:12px 48px;min-height:100%}
+.wrap{max-width:1080px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px;margin-bottom:10px}
+h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spacing:.2px}
+.sub{color:var(--board-muted);font-size:13px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 18px}
+.chip{border:1px solid var(--board-line);background:var(--chip);color:var(--board-ink);border-radius:999px;
+  padding:5px 12px;font:600 13px var(--sans);cursor:pointer;letter-spacing:.2px}
+.chip[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.chip .n{opacity:.7;font-weight:400;margin-left:4px;font-variant-numeric:tabular-nums}
+.chip:focus-visible,.note:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.spacer{flex:1}
+.addform{display:flex;gap:6px;flex:1 1 260px;min-width:0}
+.addform input{flex:1;min-width:0;border:1px solid var(--board-line);background:var(--chip);color:var(--board-ink);
+  border-radius:8px;padding:7px 10px;font:14px var(--sans)}
+.addform button{border:0;background:var(--chip-on);color:var(--chip-on-ink);border-radius:8px;padding:7px 12px;font:600 13px var(--sans);cursor:pointer}
+
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 18px;align-items:start}
+.empty{grid-column:1/-1;color:var(--board-muted);padding:40px 8px;text-align:center;font-size:15px;max-width:48ch;margin:0 auto}
+.empty b{color:var(--board-ink)}
+
+.note{position:relative;background:var(--paper-wait);color:var(--paper-ink);min-height:150px;padding:14px 14px 12px;
+  border:0;text-align:left;cursor:pointer;font-family:var(--sans);width:100%;
+  box-shadow:2px 4px 10px var(--paper-shadow);transform:rotate(var(--tilt,0deg));transition:transform .15s,box-shadow .15s}
+.note::before{content:"";position:absolute;left:50%;top:-7px;width:56px;height:14px;margin-left:-28px;
+  background:rgba(255,255,255,.45);border:1px solid rgba(0,0,0,.08);transform:rotate(-1deg)}
+.note:hover{transform:rotate(0) translateY(-2px);box-shadow:3px 8px 16px var(--paper-shadow);z-index:1}
+.note.need{background:var(--paper-need)} .note.cal{background:var(--paper-cal)} .note.done{background:var(--paper-done)}
+.note.manual{background:var(--paper-manual)}
+.note.done .t{text-decoration:line-through;opacity:.7}
+.tag{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--paper-muted);margin-bottom:6px}
+.tag.over{color:var(--danger)}
+.t{font-family:var(--display);font-size:19px;line-height:1.2;font-weight:700;margin:0 0 6px;text-wrap:balance;overflow-wrap:anywhere}
+.when{font:600 13px var(--sans);margin:0 0 4px;font-variant-numeric:tabular-nums}
+.who,.line{font-size:13px;color:var(--paper-muted);margin:0;overflow-wrap:anywhere}
+.line{color:var(--paper-ink);opacity:.85;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--paper-muted)}
+.foot .clips{font-variant-numeric:tabular-nums}
+
+/* detail sheet */
+.scrim{position:fixed;inset:0;background:rgba(20,24,20,.45);display:flex;justify-content:center;align-items:flex-end;z-index:10;padding:0}
+@media (min-width:700px){.scrim{align-items:center;padding:24px}}
+.sheet{background:var(--sheet);color:var(--sheet-ink);width:100%;max-width:620px;max-height:92vh;overflow:auto;
+  border-radius:16px 16px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 30px rgba(0,0,0,.3)}
+@media (min-width:700px){.sheet{border-radius:14px;padding-bottom:18px}}
+.sheet h2{font-family:var(--display);font-size:24px;margin:0 0 4px;line-height:1.2;text-wrap:balance}
+.meta{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;font-size:14px;margin:10px 0 14px}
+.meta dt{color:var(--board-muted);font-weight:600}
+.meta dd{margin:0;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 16px}
+.btn{border:1px solid var(--sheet-line);background:transparent;color:var(--sheet-ink);border-radius:8px;padding:7px 12px;font:600 13px var(--sans);cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.clipsh{font:600 11px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--board-muted);margin:0 0 8px}
+.clip{border-left:3px solid var(--sheet-line);padding:4px 0 4px 12px;margin:0 0 10px;font-size:14px}
+.clip .at{font-weight:600;font-size:12.5px;color:var(--board-muted);display:block;margin-bottom:2px}
+.clip .sub{display:block;font-style:italic;font-size:12.5px;margin-top:2px}
+.close{position:sticky;top:0;float:right;border:0;background:var(--chip);color:var(--sheet-ink);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--chip-on);color:var(--chip-on-ink);
+  padding:8px 14px;border-radius:999px;font:600 13px var(--sans);z-index:20;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.ro{font-size:12.5px;color:var(--board-muted);margin-top:-6px;margin-bottom:12px}
+@media (prefers-reduced-motion: reduce){.note,.note:hover{transition:none;transform:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Travelling Post-its</h1>
+    <span class="sub" id="sub">Loading your board…</span>
+  </header>
+  <div class="toolbar" id="filters" role="group" aria-label="Show">
+    <button class="chip" data-f="open" aria-pressed="true">Open<span class="n" id="n-open"></span></button>
+    <button class="chip" data-f="need" aria-pressed="false">Needs you<span class="n" id="n-need"></span></button>
+    <button class="chip" data-f="wait" aria-pressed="false">Waiting on them<span class="n" id="n-wait"></span></button>
+    <button class="chip" data-f="cal" aria-pressed="false">On calendar<span class="n" id="n-cal"></span></button>
+    <button class="chip" data-f="done" aria-pressed="false">Done<span class="n" id="n-done"></span></button>
+    <span class="spacer"></span>
+    <form class="addform" id="addform" autocomplete="off">
+      <input id="addtext" placeholder="Watch for… e.g. “chair delivery, Homesense”" aria-label="Add a post-it to watch for" maxlength="140">
+      <button type="submit" id="addbtn">Stick it</button>
+    </form>
+  </div>
+  <p class="ro" id="ro" hidden>You can read this board but not change it.</p>
+  <div class="board" id="board" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(s){return document.querySelector(s)};
+  var board=$("#board"), sub=$("#sub"), filters=$("#filters");
+  var db=null, uid=null, canWrite=null, items=[], filter="open", open=null;
+  try{ var f=localStorage.getItem("postit.filter"); if(f) filter=f; }catch(e){}
+  filters.querySelectorAll(".chip").forEach(function(c){ c.setAttribute("aria-pressed", String(c.dataset.f===filter)); });
+
+  var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function pd(s){ if(!s) return null; var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s); return m? new Date(+m[1],+m[2]-1,+m[3]) : null; }
+  function today(){ var d=new Date(); return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  function fmtDate(s){ var d=pd(s); if(!d) return ""; return DOW[d.getDay()]+" "+MON[d.getMonth()]+" "+d.getDate(); }
+  function fmtTime(t){ if(!t) return ""; var m=/^(\d{1,2}):(\d{2})$/.exec(t); if(!m) return t; var h=+m[1], ap=h>=12?"pm":"am"; h=h%12||12; return h+(m[2]==="00"?"":":"+m[2])+ap; }
+  function whenLine(p){
+    var a=fmtDate(p.expected); if(!a) return p.status==="pending"? "No date yet" : "";
+    var b=p.expected_end&&p.expected_end!==p.expected? " – "+fmtDate(p.expected_end):"";
+    var t=p.time? " · "+fmtTime(p.time):""; var tt=p.time_end? "–"+fmtTime(p.time_end):"";
+    return a+b+t+tt;
+  }
+  function fmtAt(s){ if(!s) return ""; var d=pd(s.slice(0,10)); if(!d) return s; return MON[d.getMonth()]+" "+d.getDate(); }
+  function overdue(p){ var d=pd(p.expected); return !!(p.status==="pending" && d && d<today()); }
+  function bucket(p){
+    if(p.status==="done"||p.status==="dismissed"||p.status==="cancelled") return "done";
+    if(p.status==="scheduled") return "cal";
+    if(p.needs_me||overdue(p)) return "need";
+    return "wait";
+  }
+  function tagFor(p,b){
+    if(p.status==="cancelled") return "Cancelled";
+    if(p.status==="dismissed") return "Dismissed";
+    if(p.status==="done") return "Done";
+    if(p.manual && !(p.threads&&p.threads.length)) return "Watching for this";
+    if(overdue(p)) return "Overdue";
+    if(b==="need") return "Needs you";
+    if(b==="cal") return p.kind==="event"? "On calendar" : "Booked";
+    return "Waiting on them";
+  }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]}); }
+  function hashTilt(id){ var h=0; for(var i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))|0; return ((h%7)-3)*0.6; }
+  function sortKey(p){ var d=pd(p.expected); return d? d.getTime() : 8.64e15 - (Date.parse(p.updated_at||0)||0); }
+
+  function render(){
+    var counts={open:0,need:0,wait:0,cal:0,done:0};
+    var rows=items.slice().sort(function(a,b){ return sortKey(a)-sortKey(b); });
+    rows.forEach(function(p){ var b=bucket(p); counts[b]++; if(b!=="done") counts.open++; });
+    Object.keys(counts).forEach(function(k){ var el=$("#n-"+k); if(el) el.textContent=counts[k]? counts[k] : ""; });
+    var show=rows.filter(function(p){ var b=bucket(p); return filter==="open"? b!=="done" : b===filter; });
+    board.innerHTML="";
+    if(!show.length){
+      var e=document.createElement("p"); e.className="empty";
+      e.innerHTML = items.length? "Nothing here right now." :
+        "<b>No post-its yet.</b> The hourly routine reads your email for promises and dated plans and sticks one here for each. You can also type something to watch for above.";
+      board.appendChild(e);
+    }
+    show.forEach(function(p){
+      var b=bucket(p), btn=document.createElement("button");
+      btn.className="note "+b+(p.manual&&!(p.threads&&p.threads.length)?" manual":"");
+      btn.style.setProperty("--tilt", hashTilt(p.id)+"deg");
+      btn.setAttribute("aria-label", p.title);
+      var tag=tagFor(p,b), over=overdue(p);
+      btn.innerHTML =
+        '<span class="tag'+(over?' over':'')+'">'+esc(tag)+'</span>'+
+        '<p class="t">'+esc(p.title)+'</p>'+
+        '<p class="when">'+esc(whenLine(p))+'</p>'+
+        (p.who? '<p class="who">'+esc(p.who)+'</p>':'')+
+        (p.note? '<p class="line">'+esc(p.note)+'</p>':'')+
+        '<div class="foot"><span>'+(p.kind==="event"?"Event":"Commitment")+'</span><span class="clips">'+((p.clips||[]).length)+' clip'+((p.clips||[]).length===1?"":"s")+'</span></div>';
+      btn.addEventListener("click", function(){ openSheet(p.id); });
+      board.appendChild(btn);
+    });
+    sub.textContent = items.length? (counts.open+" open · "+counts.need+" need you") : (db? "Board is empty" : "Loading your board…");
+  }
+
+  filters.addEventListener("click", function(ev){
+    var c=ev.target.closest(".chip"); if(!c) return;
+    filter=c.dataset.f; try{ localStorage.setItem("postit.filter",filter); }catch(e){}
+    filters.querySelectorAll(".chip").forEach(function(x){ x.setAttribute("aria-pressed", String(x===c)); });
+    render();
+  });
+
+  /* detail sheet */
+  function openSheet(id){
+    closeSheet();
+    var p=items.find(function(x){return x.id===id}); if(!p) return;
+    open=id;
+    var scrim=document.createElement("div"); scrim.className="scrim"; scrim.id="scrim";
+    var s=document.createElement("div"); s.className="sheet"; s.setAttribute("role","dialog"); s.setAttribute("aria-modal","true");
+    var clips=(p.clips||[]).slice().sort(function(a,b){ return String(a.at||"").localeCompare(String(b.at||"")); });
+    var b=bucket(p);
+    s.innerHTML =
+      '<button class="close" aria-label="Close" id="closebtn">×</button>'+
+      '<span class="tag'+(overdue(p)?' over':'')+'">'+esc(tagFor(p,b))+'</span>'+
+      '<h2>'+esc(p.title)+'</h2>'+
+      '<dl class="meta">'+
+        '<dt>When</dt><dd>'+esc(whenLine(p)||"—")+'</dd>'+
+        (p.who? '<dt>Who</dt><dd>'+esc(p.who)+'</dd>':'')+
+        (p.note? '<dt>Now</dt><dd>'+esc(p.note)+'</dd>':'')+
+        (p.location? '<dt>Where</dt><dd>'+esc(p.location)+'</dd>':'')+
+        (p.nudged? '<dt>Nudged</dt><dd>'+esc(fmtAt(p.nudged))+'</dd>':'')+
+      '</dl>'+
+      '<div class="actions" id="acts">'+
+        (p.source_url? '<a class="btn" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">Open email</a>':'')+
+        (p.event_url? '<a class="btn" href="'+esc(p.event_url)+'" target="_blank" rel="noopener">Open calendar</a>':'')+
+        (b!=="done"? '<button class="btn primary" data-act="done">Done</button><button class="btn" data-act="dismissed">Dismiss</button>':'<button class="btn" data-act="pending">Reopen</button>')+
+      '</div>'+
+      '<p class="clipsh">'+(clips.length? "What was said" : "No clips yet")+'</p>'+
+      clips.map(function(c){ return '<div class="clip"><span class="at">'+esc(fmtAt(c.at))+(c.from?' · '+esc(c.from):'')+'</span>'+esc(c.text)+(c.subject?'<span class="sub">'+esc(c.subject)+'</span>':'')+'</div>'; }).join("");
+    scrim.appendChild(s); document.body.appendChild(scrim);
+    $("#closebtn").addEventListener("click", closeSheet);
+    scrim.addEventListener("click", function(ev){ if(ev.target===scrim) closeSheet(); });
+    s.querySelectorAll("[data-act]").forEach(function(bt){
+      if(canWrite===false){ bt.disabled=true; return; }
+      bt.addEventListener("click", function(){ setStatus(p, bt.dataset.act, bt); });
+    });
+    document.addEventListener("keydown", escClose);
+  }
+  function escClose(ev){ if(ev.key==="Escape") closeSheet(); }
+  function closeSheet(){ var sc=$("#scrim"); if(sc) sc.remove(); open=null; document.removeEventListener("keydown", escClose); }
+
+  var toastT=null;
+  function toast(msg){ var t=$("#toast"); if(!t){ t=document.createElement("div"); t.className="toast"; t.id="toast"; document.body.appendChild(t); }
+    t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(function(){ t.remove(); }, 2200); }
+
+  function nowIso(){ return new Date().toISOString(); }
+  function setStatus(p, status, bt){
+    if(!db) return;
+    bt.disabled=true;
+    var patch={status:status, updated_at:nowIso()};
+    if(status==="done"||status==="dismissed") patch.closed_at=nowIso();
+    db.doc("postits/"+p.id).update(patch).then(function(){
+      toast(status==="done"?"Marked done":status==="dismissed"?"Dismissed, the routine will leave it alone":"Reopened");
+      closeSheet();
+    }).catch(function(e){
+      bt.disabled=false;
+      if(e&&e.code==="invalid_argument"){ canWrite=false; $("#ro").hidden=false; toast("This board is read-only for you"); }
+      else toast("Couldn't save, try again");
+    });
+  }
+
+  $("#addform").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var inp=$("#addtext"), v=inp.value.trim(); if(!v||!db) return;
+    var btn=$("#addbtn"); btn.disabled=true;
+    var ref=db.collection("postits").doc();
+    ref.set({ title:v, kind:"commitment", status:"pending", manual:true, needs_me:false,
+      who:"", expected:null, expected_end:null, time:null, threads:[], msgs:0, event:null, event_url:null, source_url:null,
+      nudged:null, note:"Added by hand. The next hourly run looks for a matching email thread.", clips:[],
+      created_at:nowIso(), updated_at:nowIso() })
+    .then(function(){ inp.value=""; toast("Stuck on the board"); })
+    .catch(function(e){ if(e&&e.code==="invalid_argument"){ canWrite=false; $("#ro").hidden=false; toast("This board is read-only for you"); } else toast("Couldn't save, try again"); })
+    .then(function(){ btn.disabled=false; });
+  });
+
+  render();
+  if(!window.claude||!window.claude.use){ sub.textContent="Open this page inside Claude to see your board."; return; }
+  Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function(r){
+    db=r[0]; var user=r[1];
+    if(!db){ sub.textContent="Sign in to see your board."; $("#addform").hidden=true; return; }
+    if(user){ user.can("data.write").then(function(w){ canWrite=w; if(w===false){ $("#ro").hidden=false; $("#addform").hidden=true; } }).catch(function(){}); }
+    db.collection("postits").onSnapshot(function(snap){
+      items=snap.docs.filter(function(d){return d.exists}).map(function(d){ var o=Object.assign({},d.data()); o.id=d.id; return o; });
+      render();
+      if(open) { var still=items.some(function(x){return x.id===open}); if(!still) closeSheet(); }
+    }, function(e){ sub.textContent="Board unavailable right now ("+(e&&e.code||"error")+")."; });
+  });
+})();
+</script>
