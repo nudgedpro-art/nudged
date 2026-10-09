@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0 — 2026-10-09
+
+First paid release.
+
+- Billing live: Stripe subscription (14-day trial, CA$9/month incl. HST) sold by Dockhand Inc.; licence key emailed on checkout.
+- Licence server: race-safe key issue when Stripe's checkout and subscription events arrive together; events are only marked handled after success so a failed send is retried; live and sandbox endpoints both verify; works with Stripe API versions before and after 2025-03-31.
+- nudged.pro: live Subscribe link, manage-subscription link, seller and HST details.
+
+
 ## 0.1.0 — 2026-10-09
 
 First working version.

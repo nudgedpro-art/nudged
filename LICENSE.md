@@ -1,6 +1,6 @@
 # Nudged Licence
 
-Copyright (c) 2026 Sonal Agarwal. All rights reserved.
+Copyright (c) 2026 Dockhand Inc. (Ontario, Canada). All rights reserved. Nudged is sold by Dockhand Inc.; contact Sonal Agarwal, hello@nudged.pro.
 
 Nudged (the plugin, its skills, board page, backend code and documentation in this repository) is commercial software. Installing the plugin from this repository is permitted so that it can run inside your own Claude account.
 

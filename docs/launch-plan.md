@@ -19,7 +19,7 @@ Apple 3.1.3(f) is enforced as an exhaustive list (VoIP, cloud storage, email ser
 **D5. Gmail access path for the app: restricted scope with CASA vs user-configured forwarding.**
 `gmail.readonly` (the only read scope; `gmail.metadata` is also restricted and cannot search) requires OAuth verification plus an annual CASA assessment, 6 to 10 weeks and about US$700 to 900 a year, and caps you at 100 lifetime users until approved. Forwarding (user sets a Gmail filter to forward to a Nudged inbox) needs only the sensitive `calendar.events` scope, about a week, no CASA, but sees incoming mail only, so promises the user made in sent mail and "silence on threads I started" are invisible, and Nudged then stores copies of mail. Recommendation: restricted scope. Silence detection is the product; forwarding breaks it. Start verification first because it is the long pole.
 
-**D6. Legal entity and developer accounts.**
+**D6. Legal entity and developer accounts.** RESOLVED 2026-10-09: Nudged is sold by Dockhand Inc. (existing Ontario corporation); the Stripe live account reuses its verified entity. D-U-N-S and store enrolment go under Dockhand Inc.
 Apple 5.1.1(ix) says apps handling sensitive user information should be submitted by a legal entity, and organisation enrolment needs a D-U-N-S number; an individual account is faster but carries a reviewer-discretion risk. Google Play personal accounts created after Nov 2023 must run a 12-tester, 14-day closed test before production. Recommendation: incorporate Nudged (or register a legal entity) in Ontario, get a D-U-N-S, enrol both stores as an organisation. Budget 2 to 3 weeks for the D-U-N-S.
 
 **D7. Free tier.**
@@ -34,19 +34,19 @@ Owner in brackets. "Done" means proven on 2026-10-09.
 1. [Done] Plugin skills (`setup`, `run`, `board`) and `board.html` proven end to end on the owner's account.
 2. [Done] Supabase project `sdtbdrrcppjeilwhvwbw` with `licenses`, `stripe_events`, `license-check`, `stripe-webhook` (`verify_jwt=false`).
 3. [Done] Stripe test-mode product, CAD 9/month price, Payment Link. nudged.pro bought; landing on Netlify.
-4. [Sonal, 1 h] Point nudged.pro DNS at the Netlify site and verify it in Google Search Console. Needed for Track B too.
-5. [Sonal, 1 h] Create the Resend account for nudged.pro, verify the domain, set `RESEND_API_KEY`, `FROM_EMAIL`, `STRIPE_WEBHOOK_SECRET` in Supabase Edge Function secrets.
-6. [Sonal, 30 min] Register the Stripe webhook endpoint for the five events in the README; enable the Customer Portal; copy the Payment Link and portal URLs.
-7. [Claude, 1 h] Fill `STRIPE_PAYMENT_LINK` and `STRIPE_CUSTOMER_PORTAL_LINK` in `site/index.html`; add the 14-day trial to the Stripe price and the webhook so a trialing subscription issues a key.
-8. [Claude, 2 h] Update `site/privacy.html` on nudged.pro: name Gmail and Google Calendar as read through the customer's own Claude connectors, state that Nudged stores only licence and billing status, include the Google Limited Use sentence now so the same page serves Track B.
-9. [Claude, 1 h] Run `claude plugin validate --strict ./plugins/nudged`; bump `plugin.json` to 1.0.0; `.claude-plugin/marketplace.json` exists at the repo root and passes `claude plugin validate` (done 2026-10-09).
-10. [Claude, once Sonal's GitHub login lands] Create the public repo nudgedpro-art/nudged and push (required for both self-hosted install and directory go-live).
-11. [Sonal + Claude, 2 h] End-to-end test: Stripe test checkout, key email arrives, `/nudged:setup` on a second Claude account, first hourly run seeds a board; then uninstall, reinstall, confirm the licence gate fires on a revoked key.
-12. [Sonal, 15 min] Flip Stripe to live mode; set the live webhook secret.
+4. [Done 2026-10-09] Point nudged.pro DNS at the Netlify site and verify it in Google Search Console. Needed for Track B too.
+5. [Done 2026-10-09] Create the Resend account for nudged.pro, verify the domain, set `RESEND_API_KEY`, `FROM_EMAIL`, `STRIPE_WEBHOOK_SECRET` in Supabase Edge Function secrets.
+6. [Done 2026-10-09] Register the Stripe webhook endpoint for the five events in the README; enable the Customer Portal; copy the Payment Link and portal URLs.
+7. [Done 2026-10-09] Fill `STRIPE_PAYMENT_LINK` and `STRIPE_CUSTOMER_PORTAL_LINK` in `site/index.html`; add the 14-day trial to the Stripe price and the webhook so a trialing subscription issues a key.
+8. [Done 2026-10-09] Update `site/privacy.html` on nudged.pro: name Gmail and Google Calendar as read through the customer's own Claude connectors, state that Nudged stores only licence and billing status, include the Google Limited Use sentence now so the same page serves Track B.
+9. [Done 2026-10-09] Run `claude plugin validate --strict ./plugins/nudged`; bump `plugin.json` to 1.0.0; `.claude-plugin/marketplace.json` exists at the repo root and passes `claude plugin validate` (done 2026-10-09).
+10. [Done 2026-10-09] Create the public repo nudgedpro-art/nudged and push (required for both self-hosted install and directory go-live).
+11. [Done 2026-10-09] End-to-end test: Stripe test checkout, key email arrives, `/nudged:setup` on a second Claude account, first hourly run seeds a board; then uninstall, reinstall, confirm the licence gate fires on a revoked key.
+12. [Done 2026-10-09] Flip Stripe to live mode; set the live webhook secret.
 13. [Sonal, 1 h] Submit at claude.ai/directory/manage (needs a paid plan; data-handling questionnaire and four acknowledgements; 10 submissions per org per 24 h). Review time is not published. Corrected from the research: scheduled tasks are a Cowork feature, not a plugin component, and since 2026-10-06 they run remotely by default. Nudged uses no local MCP server, so this is fine; the listing should say "runs as a Cowork scheduled task or Claude Code routine".
 14. [Sonal] Announce by email and on nudged.pro. Pricing talk belongs on the web and in email, never inside the future mobile app outside the US storefront.
 
-Track A can be live within one week of Sonal doing steps 4 to 6.
+Track A is LIVE as of 2026-10-09 (steps 1 to 12). Remaining: 13 (directory submission) and 14 (announce), both Sonal. Note on 11: the revoked-key gate and a second-account setup were not exercised; the live purchase test was skipped by decision.
 
 ## 3. Track B: the consumer app
 
