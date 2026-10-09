@@ -1,9 +1,9 @@
--- Nudged licence store. One row per paying customer.
+-- Nudged licence store. One row per paying customer. Tables are prefixed nudged_ because they share a Supabase project with Dockhand.
 -- Keys are issued by the stripe-webhook function and checked by license-check.
 
 create extension if not exists pgcrypto;
 
-create table if not exists public.licenses (
+create table if not exists public.nudged_licenses (
   id                    uuid primary key default gen_random_uuid(),
   license_key           text not null unique,              -- ND-XXXX-XXXX-XXXX-XXXX
   email                 text not null,
@@ -18,22 +18,22 @@ create table if not exists public.licenses (
   updated_at            timestamptz not null default now()
 );
 
-create index if not exists licenses_email_idx on public.licenses (email);
+create index if not exists nudged_licenses_email_idx on public.nudged_licenses (email);
 
 -- Nobody reads or writes this table through the public API; only the two
 -- edge functions do, with the service role key.
-alter table public.licenses enable row level security;
+alter table public.nudged_licenses enable row level security;
 
 -- Audit of every webhook we accepted, so a replayed or doubled event is harmless.
-create table if not exists public.stripe_events (
+create table if not exists public.nudged_stripe_events (
   id          text primary key,            -- Stripe event id (evt_...)
   type        text not null,
   received_at timestamptz not null default now()
 );
-alter table public.stripe_events enable row level security;
+alter table public.nudged_stripe_events enable row level security;
 
 -- Key generator: 16 unambiguous characters in four groups.
-create or replace function public.gen_license_key() returns text
+create or replace function public.gen_nudged_license_key() returns text
 language plpgsql as $$
 declare
   alphabet text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

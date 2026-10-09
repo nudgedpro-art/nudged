@@ -10,7 +10,7 @@ Walk the user through setup in plain language. Each step tells them what you are
 
 Ask for the licence key from their purchase email (format `ND-XXXX-XXXX-XXXX-XXXX`). Check it with WebFetch (or `curl -s` in Bash):
 
-`https://LICENSE_ENDPOINT/license-check?key=<key>`
+`https://bhalezzpzzqcbqjefgld.supabase.co/functions/v1/nudged-license-check?key=<key>`
 
 Expect JSON `{ "valid": true, "plan": "...", "renews": "YYYY-MM-DD" }`. If `valid` is false, tell them the message and point to https://nudged.pro/account. Do not continue without a valid key.
 

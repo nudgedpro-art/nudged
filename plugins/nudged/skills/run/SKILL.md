@@ -18,7 +18,7 @@ It holds `license_key`, `board_url`, `calendar_id`, `timezone`, `email`. If the 
 
 Check the licence with WebFetch (fall back to `curl -s` in Bash if WebFetch is unavailable):
 
-`https://LICENSE_ENDPOINT/license-check?key=<license_key>`
+`https://bhalezzpzzqcbqjefgld.supabase.co/functions/v1/nudged-license-check?key=<license_key>`
 
 The reply is JSON `{ "valid": true|false, "plan": "...", "renews": "YYYY-MM-DD", "message": "..." }`. If `valid` is false, or the endpoint cannot be reached three times in a row, stop and output `Nudged: licence inactive (<message>). Manage it at https://nudged.pro/account`. Never work around an inactive licence.
 

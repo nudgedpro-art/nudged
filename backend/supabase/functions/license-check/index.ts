@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   if (!KEY_RE.test(key)) return json({ valid: false, message: "That does not look like a licence key." });
 
   const { data: lic, error } = await supabase
-    .from("licenses")
+    .from("nudged_licenses")
     .select("plan,status,current_period_end,check_count")
     .eq("license_key", key)
     .maybeSingle();
@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
   // Usage stamp; failure here never affects the answer.
   await supabase
-    .from("licenses")
+    .from("nudged_licenses")
     .update({ last_checked_at: now.toISOString(), check_count: (lic.check_count ?? 0) + 1 })
     .eq("license_key", key);
 

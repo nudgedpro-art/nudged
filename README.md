@@ -27,10 +27,10 @@ site/index.html                      landing page with the Stripe Payment Link
 ## Launch checklist (in order)
 
 1. **Stripe (new account).** Create a product "Nudged" with a monthly price (and optionally yearly). Create a Payment Link in subscription mode that collects email. Enable the Customer Portal. Note the Payment Link URL and the portal URL.
-2. **Supabase (new project).** Apply `backend/supabase/migrations/0001_licenses.sql`. Deploy both functions with `verify_jwt=false`. Set secrets: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `FROM_EMAIL`.
-3. **Stripe webhook.** Endpoint `https://<project>.supabase.co/functions/v1/stripe-webhook`, events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Paste the signing secret into `STRIPE_WEBHOOK_SECRET`.
+2. **Supabase.** Lives in the existing Dockhand project (`bhalezzpzzqcbqjefgld`): tables `nudged_licenses` and `nudged_stripe_events`, functions `nudged-license-check` and `nudged-stripe-webhook` (both `verify_jwt=false`). Secrets, set in the Supabase dashboard under Edge Functions → Secrets: `NUDGED_STRIPE_WEBHOOK_SECRET` (from the Stripe webhook endpoint), `NUDGED_FROM_EMAIL`, and the project-wide `RESEND_API_KEY` that Dockhand already uses. No Stripe API key is needed.
+3. **Stripe webhook.** Endpoint `https://bhalezzpzzqcbqjefgld.supabase.co/functions/v1/nudged-stripe-webhook`, events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`. Paste the signing secret into `NUDGED_STRIPE_WEBHOOK_SECRET`.
 4. **Resend.** Verify the sending domain for `FROM_EMAIL`.
-5. **Fill the placeholders.** `LICENSE_ENDPOINT` in `skills/setup/SKILL.md` and `skills/run/SKILL.md` (→ `<project>.supabase.co/functions/v1`), `STRIPE_PAYMENT_LINK` and `STRIPE_CUSTOMER_PORTAL_LINK` in `site/index.html`, and the GitHub owner in the webhook's email text and the README.
+5. **Fill the placeholders.** `STRIPE_PAYMENT_LINK` and `STRIPE_CUSTOMER_PORTAL_LINK` in `site/index.html`, and the GitHub owner in the webhook's email text and the README.
 6. **Publish.** Push this repo to a public GitHub repo (the plugin files must be readable to install). Host `site/` on Netlify.
 7. **Test end to end** with a Stripe test-mode checkout: key arrives → `/nudged:setup` on a second Claude account → first run seeds a board.
 
