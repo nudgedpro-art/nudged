@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy — Nudged</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{--board:#e4e6df;--ink:#2a2f2b;--muted:#6b7268}
+*{box-sizing:border-box}
+body{margin:0;background:var(--board);color:var(--ink);font:17px/1.55 "Source Sans 3",system-ui,sans-serif;padding:24px 16px 64px}
+main{max-width:720px;margin:0 auto}
+h1{font:700 40px/1.1 Kalam,cursive;margin:16px 0 4px}
+h2{font-size:20px;margin:28px 0 8px}
+p,li{max-width:65ch}
+.meta{color:var(--muted);font-size:14px}
+a{color:inherit}
+</style>
+</head>
+<body>
+<main>
+  <p class="meta"><a href="/">Nudged</a></p>
+  <h1>Privacy</h1>
+  <p class="meta">Last updated 9 October 2026. Applies to the Nudged plugin for Claude and to nudged.pro.</p>
+
+  <h2>The short version</h2>
+  <p>Nudged runs inside your own Claude account, using your own Gmail and Google Calendar connections. Your email and calendar data are processed there and never sent to us. The only things we store are what we need to bill you and to check that your licence is active.</p>
+
+  <h2>What we store</h2>
+  <ul>
+    <li>Your email address, as given to Stripe at checkout.</li>
+    <li>Your licence key, your plan, and your billing status.</li>
+    <li>The time your licence was last checked and a count of checks.</li>
+    <li>Stripe customer and subscription identifiers so we can match payments to your licence.</li>
+  </ul>
+  <p>Payment card details are handled by Stripe and never reach us. Stripe's privacy policy applies to the checkout and the customer portal.</p>
+
+  <h2>What we never receive</h2>
+  <ul>
+    <li>The content of your email or calendar.</li>
+    <li>The notes on your board. The board is a page published in your own Claude account; its data lives there.</li>
+    <li>Your Google credentials. Access to Gmail and Google Calendar is granted by you to Claude through Anthropic's connectors, under Anthropic's privacy policy, not to Nudged.</li>
+  </ul>
+
+  <h2>What the plugin does with your accounts</h2>
+  <p>Every hour, while the Claude desktop app is open, the plugin reads Gmail threads from the last two days, skipping promotions, social and forum mail, and adds a hidden label to each message it has read so it is never read twice. It writes notes to your private board and creates calendar events for confirmed plans, each marked so it only ever edits its own. It never sends, replies to, forwards, archives or deletes email, and never deletes a calendar event.</p>
+
+  <h2>Licence checks</h2>
+  <p>Before each run the plugin sends your licence key to nudged.pro to confirm it is active. That request contains the key and nothing else.</p>
+
+  <h2>Retention and deletion</h2>
+  <p>Licence records are kept while your subscription is active and for 12 months after it ends, for accounting. Email <a href="mailto:hello@nudged.pro">hello@nudged.pro</a> from your billing address to have your record deleted sooner. Uninstalling the plugin and deleting the board page in Claude removes everything on your side.</p>
+
+  <h2>Where data lives</h2>
+  <p>Licence records are stored with Supabase in Canada (ca-central-1). Payments are processed by Stripe. Transactional email is sent through Resend.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes in a way that affects you, we will say so on this page and in the plugin's changelog before it takes effect.</p>
+
+  <h2>Contact</h2>
+  <p>Sonal Agarwal, Ontario, Canada. <a href="mailto:hello@nudged.pro">hello@nudged.pro</a></p>
+</main>
+</body>
+</html>
