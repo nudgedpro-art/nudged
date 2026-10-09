@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-10-09
+
+- Skills no longer use a shell: config is read with Read, the licence check uses WebFetch, setup writes files with Write. Removes the pre-approved shell commands the directory flags.
+- Listing icon added.
+
+
 ## 1.0.0 — 2026-10-09
 
 First paid release.

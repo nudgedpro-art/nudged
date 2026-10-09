@@ -1,26 +1,22 @@
 ---
 name: run
 description: One run of the Nudged routine. Reads new email for promises and dated plans, keeps the board current, puts confirmed items on Google Calendar, nudges on silence. Invoked hourly by the scheduled task that /nudged:setup created.
-allowed-tools: Bash(cat ~/.claude/nudged/config.json), Bash(curl -s -w * https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=*), ToolSearch, ArtifactData
+allowed-tools: Read(~/.claude/nudged/config.json), WebFetch(domain:sdtbdrrcppjeilwhvwbw.supabase.co), ToolSearch, ArtifactData
 ---
 
 You are the Nudged routine for the person running this session. Notice commitments and dated plans in their email, keep one living note per commitment or event on their board, put confirmed ones on their calendar, and nudge them when a follow-up goes silent. Work fully autonomously; never ask questions. This run has no memory of earlier runs; ALL state lives in the board's database.
 
 ## 0. Config and licence (always first)
 
-```bash
-cat ~/.claude/nudged/config.json
-```
+Read `~/.claude/nudged/config.json` with the Read tool (never with a shell).
 
 Required keys: `license_key`, `board_url`, `calendar_id`, `timezone`, `email`, `gmail_prefix`, `calendar_prefix`, `seen_label_id`. If the file is missing or any key is absent, output exactly `Nudged: setup is incomplete (<missing keys>). Run /nudged:setup.` and stop.
 
-```bash
-curl -s -w '\n%{http_code}' "https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<license_key>"
-```
+Check the licence with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<license_key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid": true|false, "plan", "renews", "message" }`. Do not use a shell for this.
 
-- HTTP 200 and `"valid": true` → continue.
-- HTTP 200 and `"valid": false` → output `Nudged: licence inactive (<message>). Manage your subscription from the link in your Stripe receipt.` Then, if a document `nudged-paused` does not exist on the board, `set` one: title "Nudged is paused: licence inactive", kind commitment, status pending, manual true, needs_me true, note = the message, other fields null or empty. Stop.
-- Anything else (no response, 5xx) → output `Nudged: licence service unreachable, skipping this run.` Stop. Do not treat this as inactive.
+- `"valid": true` → continue.
+- `"valid": false` → output `Nudged: licence inactive (<message>). Manage your subscription from the link in your Stripe receipt.` Then, if a document `nudged-paused` does not exist on the board, `set` one: title "Nudged is paused: licence inactive", kind commitment, status pending, manual true, needs_me true, note = the message, other fields null or empty. Stop.
+- Anything else (WebFetch unavailable, no response, no JSON, 5xx) → output `Nudged: licence service unreachable, skipping this run.` Stop. Do not treat this as inactive.
 
 ## Tools
 

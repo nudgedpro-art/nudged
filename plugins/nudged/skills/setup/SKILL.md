@@ -1,7 +1,7 @@
 ---
 name: setup
 description: Set up Nudged on this account. Checks the licence key, confirms Gmail and Google Calendar are connected, publishes the user's private board, pre-approves the tools the hourly routine needs, and creates the routine. Run once; safe to run again.
-allowed-tools: Bash, ToolSearch, Read, Artifact, ArtifactData, mcp__scheduled-tasks__list_scheduled_tasks, mcp__scheduled-tasks__create_scheduled_task, mcp__scheduled-tasks__update_scheduled_task
+allowed-tools: Read, Write, Edit, WebFetch(domain:sdtbdrrcppjeilwhvwbw.supabase.co), ToolSearch, Artifact, ArtifactData, mcp__scheduled-tasks__list_scheduled_tasks, mcp__scheduled-tasks__create_scheduled_task, mcp__scheduled-tasks__update_scheduled_task
 ---
 
 Walk the user through setup in plain language. Before each step say in one line what you are about to do. If a step fails, stop and explain; do not improvise around it. Never send email, never delete anything, never touch calendar events.
@@ -12,15 +12,11 @@ Load `mcp__scheduled-tasks__create_scheduled_task`, `mcp__scheduled-tasks__list_
 
 ## 1. Licence key
 
-Ask for the licence key from the purchase email (format `ND-XXXX-XXXX-XXXX-XXXX`). If `~/.claude/nudged/founder-key.txt` exists, offer its contents as the default. Check it:
+Ask for the licence key from the purchase email (format `ND-XXXX-XXXX-XXXX-XXXX`). If `~/.claude/nudged/founder-key.txt` exists, offer its contents as the default. Check it with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid", "plan", "renews", "message" }`. Never use a shell for this.
 
-```bash
-curl -s -w '\n%{http_code}' "https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<key>"
-```
-
-- HTTP 200 and `"valid": true` → continue.
-- HTTP 200 and `"valid": false` → tell the user the `message` and say: "Manage or restart your subscription from the link in your Stripe receipt, or email hello@nudged.pro." Stop.
-- Anything else (no response, 5xx) → say the licence service could not be reached, ask them to try again in a few minutes. Stop.
+- `"valid": true` → continue.
+- `"valid": false` → tell the user the `message` and say: "Manage or restart your subscription from the link in your Stripe receipt, or email hello@nudged.pro." Stop.
+- Anything else (WebFetch unavailable, no response, no JSON) → say the licence service could not be reached, ask them to try again in a few minutes. Stop.
 
 ## 2. What Nudged does with your accounts
 
@@ -45,17 +41,11 @@ Seen label: in `list_labels`, look for `Nudged/Seen`; if absent, look for `Post-
 
 If `~/.claude/nudged/config.json` already has a `board_url`, verify it: ArtifactData `list` collection `postits` limit 1 with that url. If it works, keep it. If it fails, tell the user the board is no longer reachable and ask whether to publish a new empty one (old notes cannot be recovered); on yes, continue below; on no, stop.
 
-Otherwise publish the board page shipped with this plugin:
-
-```bash
-cp "${CLAUDE_PLUGIN_ROOT}/assets/board.html" /tmp/nudged-board.html
-```
-
-Read `/tmp/nudged-board.html`, then publish it with the Artifact tool: `file_path` `/tmp/nudged-board.html`, `capabilities` `{"db": {}, "user": {}}`, `icon` `note`, `description` "Your commitments and dated plans, pulled from email by the hourly routine, as living notes that nudge you." Keep the URL the publish returns as `board_url`.
+Otherwise publish the board page shipped with this plugin. Read `${CLAUDE_PLUGIN_ROOT}/assets/board.html` with the Read tool and Write an identical copy to `<scratchpad directory>/nudged-board.html` (the session's scratchpad, or the current working directory if there is none). Then publish it with the Artifact tool: `file_path` = that copy, `capabilities` `{"db": {}, "user": {}}`, `icon` `note`, `description` "Your commitments and dated plans, pulled from email by the hourly routine, as living notes that nudge you." Keep the URL the publish returns as `board_url`.
 
 ## 5. Save config
 
-Write `~/.claude/nudged/config.json` (create the folder; chmod 700 on the folder, 600 on the file):
+Write `~/.claude/nudged/config.json` with the Write tool (it creates the folder). The file holds the licence key, so tell the user it lives in their home folder and should not be shared:
 
 ```json
 { "config_version": 1, "license_key": "...", "board_url": "https://claude.ai/artifact/...", "calendar_id": "...", "timezone": "...", "email": "...", "gmail_prefix": "mcp__...__", "calendar_prefix": "mcp__...__", "seen_label_id": "Label_...", "installed_at": "<ISO now>" }
@@ -66,12 +56,12 @@ Write `~/.claude/nudged/config.json` (create the folder; chmod 700 on the folder
 The routine runs unattended, so every tool it uses must be approved in advance or the run stalls on a prompt nobody answers. Show the user this list and ask "May I add these to your Claude permissions allow list?":
 
 - `ArtifactData`
-- `Bash(cat ~/.claude/nudged/config.json)`
-- `Bash(curl -s -w * https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=*)`
+- `Read(~/.claude/nudged/config.json)`
+- `WebFetch(domain:sdtbdrrcppjeilwhvwbw.supabase.co)`
 - `<gmail_prefix>search_threads`, `<gmail_prefix>get_thread`, `<gmail_prefix>label_message`, `<gmail_prefix>update_message_labels`, `<gmail_prefix>list_labels`
 - `<calendar_prefix>create_event`, `<calendar_prefix>update_event`, `<calendar_prefix>get_event`
 
-On yes: read `~/.claude/settings.json` (create `{}` if missing), merge the entries into `permissions.allow` without removing anything that is already there, and write it back with the same formatting. On no: continue, but say the first run will ask for each approval and later runs reuse them.
+On yes: Read `~/.claude/settings.json` (treat a missing file as `{}`), merge the entries into `permissions.allow` without removing anything that is already there, and write it back with the Write tool, keeping the existing formatting. No shell commands anywhere in setup. On no: continue, but say the first run will ask for each approval and later runs reuse them.
 
 ## 7. The routine
 
