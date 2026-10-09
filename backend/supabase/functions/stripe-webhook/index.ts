@@ -24,6 +24,22 @@ function planFor(sub: Stripe.Subscription): string {
   return interval === "year" ? "yearly" : "monthly";
 }
 
+// API 2025-03-31+ moved current_period_end from the subscription to its items.
+function periodEndIso(sub: Stripe.Subscription): string | null {
+  // deno-lint-ignore no-explicit-any
+  const s = sub as any;
+  const secs = s.current_period_end ?? s.items?.data?.[0]?.current_period_end;
+  return typeof secs === "number" ? new Date(secs * 1000).toISOString() : null;
+}
+
+// API 2025-03-31+ moved invoice.subscription under invoice.parent.subscription_details.
+function invoiceSubId(inv: Stripe.Invoice): string | null {
+  // deno-lint-ignore no-explicit-any
+  const i = inv as any;
+  const ref = i.subscription ?? i.parent?.subscription_details?.subscription ?? null;
+  return typeof ref === "string" ? ref : ref?.id ?? null;
+}
+
 async function sendKeyEmail(to: string, key: string) {
   const body = [
     `Thanks for subscribing to Nudged.`,
@@ -80,7 +96,7 @@ async function handle(event: Stripe.Event) {
     }
     case "customer.subscription.created": {
       const sub = event.data.object as Stripe.Subscription;
-      const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+      const periodEnd = periodEndIso(sub);
       await ensureLicense(sub.id, { stripe_customer_id: String(sub.customer), plan: planFor(sub), current_period_end: periodEnd });
       await supabase.from("licenses").update({ plan: planFor(sub), current_period_end: periodEnd, updated_at: new Date().toISOString() }).eq("stripe_subscription_id", sub.id);
       return;
@@ -91,7 +107,7 @@ async function handle(event: Stripe.Event) {
         : sub.status === "past_due" || sub.status === "unpaid" ? "past_due" : "cancelled";
       await supabase.from("licenses").update({
         status, plan: planFor(sub),
-        current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+        current_period_end: periodEndIso(sub),
         updated_at: new Date().toISOString(),
       }).eq("stripe_subscription_id", sub.id);
       return;
@@ -104,7 +120,7 @@ async function handle(event: Stripe.Event) {
     }
     case "invoice.payment_failed": {
       const inv = event.data.object as Stripe.Invoice;
-      const subId = typeof inv.subscription === "string" ? inv.subscription : inv.subscription?.id;
+      const subId = invoiceSubId(inv);
       if (subId) await supabase.from("licenses").update({ status: "past_due", updated_at: new Date().toISOString() })
         .eq("stripe_subscription_id", subId);
       return;
