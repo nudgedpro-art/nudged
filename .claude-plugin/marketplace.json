@@ -1,5 +1,6 @@
 {
   "name": "nudged",
+  "description": "Nudged: promises and dated plans from your email, kept as living notes and calendar events.",
   "owner": { "name": "Sonal Agarwal", "email": "hello@nudged.pro", "url": "https://nudged.pro" },
   "plugins": [
     {

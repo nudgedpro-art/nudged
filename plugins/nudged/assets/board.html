@@ -7,7 +7,7 @@
   --chip:#f6f7f3; --chip-on:#2a2f2b; --chip-on-ink:#f6f7f3;
   --paper-wait:#fff176; --paper-need:#ffab91; --paper-cal:#b3e5fc; --paper-done:#d8dbd3; --paper-manual:#c5e1a5;
   --paper-ink:#2a2412; --paper-muted:#6f6438; --paper-shadow:rgba(40,45,35,.28);
-  --danger:#b3261e; --ok:#2e7d32; --focus:#1a73e8;
+  --danger:#b3261e; --paper-danger:#8c1d14; --ok:#2e7d32; --focus:#1a73e8;
   --sheet:#fbfbf8; --sheet-ink:#2a2f2b; --sheet-line:#dfe2d9;
   --display:"Kalam","Segoe Print","Bradley Hand",cursive;
   --sans:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
@@ -15,16 +15,16 @@
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --board:#1f2420; --board-ink:#e7e9e2; --board-muted:#9aa196; --board-line:#343a34;
   --chip:#2a302b; --chip-on:#e7e9e2; --chip-on-ink:#1f2420;
-  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#8f958a; --paper-manual:#aacf8c;
+  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#c9cdc3; --paper-manual:#aacf8c;
   --paper-ink:#221d0c; --paper-muted:#5d5330; --paper-shadow:rgba(0,0,0,.55);
-  --danger:#ff8a80; --ok:#81c784; --focus:#8ab4f8;
+  --danger:#ff8a80; --paper-danger:#8c1d14; --ok:#81c784; --focus:#8ab4f8;
   --sheet:#262b27; --sheet-ink:#e7e9e2; --sheet-line:#3a403a; color-scheme:dark } }
 :root[data-theme="dark"]{
   --board:#1f2420; --board-ink:#e7e9e2; --board-muted:#9aa196; --board-line:#343a34;
   --chip:#2a302b; --chip-on:#e7e9e2; --chip-on-ink:#1f2420;
-  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#8f958a; --paper-manual:#aacf8c;
+  --paper-wait:#e6d44f; --paper-need:#ee9a7c; --paper-cal:#9fd3ee; --paper-done:#c9cdc3; --paper-manual:#aacf8c;
   --paper-ink:#221d0c; --paper-muted:#5d5330; --paper-shadow:rgba(0,0,0,.55);
-  --danger:#ff8a80; --ok:#81c784; --focus:#8ab4f8;
+  --danger:#ff8a80; --paper-danger:#8c1d14; --ok:#81c784; --focus:#8ab4f8;
   --sheet:#262b27; --sheet-ink:#e7e9e2; --sheet-line:#3a403a; color-scheme:dark }
 
 *{box-sizing:border-box}
@@ -43,7 +43,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
 .spacer{flex:1}
 .addform{display:flex;gap:6px;flex:1 1 260px;min-width:0}
 .addform input{flex:1;min-width:0;border:1px solid var(--board-line);background:var(--chip);color:var(--board-ink);
-  border-radius:8px;padding:7px 10px;font:14px var(--sans)}
+  border-radius:8px;padding:7px 10px;font:16px var(--sans)}
 .addform button{border:0;background:var(--chip-on);color:var(--chip-on-ink);border-radius:8px;padding:7px 12px;font:600 13px var(--sans);cursor:pointer}
 
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 18px;align-items:start}
@@ -60,7 +60,8 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
 .note.manual{background:var(--paper-manual)}
 .note.done .t{text-decoration:line-through;opacity:.7}
 .tag{display:inline-block;font:600 10.5px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--paper-muted);margin-bottom:6px}
-.tag.over{color:var(--danger)}
+.tag.over{color:var(--paper-danger)}
+.sheet .tag{color:var(--board-muted)} .sheet .tag.over{color:var(--danger)}
 .t{font-family:var(--display);font-size:19px;line-height:1.2;font-weight:700;margin:0 0 6px;text-wrap:balance;overflow-wrap:anywhere}
 .when{font:600 13px var(--sans);margin:0 0 4px;font-variant-numeric:tabular-nums}
 .who,.line{font-size:13px;color:var(--paper-muted);margin:0;overflow-wrap:anywhere}
@@ -97,7 +98,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
 <div class="wrap">
   <header>
     <h1>Nudged</h1>
-    <span class="sub" id="sub">Loading your board…</span>
+    <span class="sub" id="sub" aria-live="polite">Loading your board…</span>
   </header>
   <div class="toolbar" id="filters" role="group" aria-label="Show">
     <button class="chip" data-f="open" aria-pressed="true">Open<span class="n" id="n-open"></span></button>
@@ -112,7 +113,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
     </form>
   </div>
   <p class="ro" id="ro" hidden>You can read this board but not change it.</p>
-  <div class="board" id="board" aria-live="polite"></div>
+  <div class="board" id="board"></div>
 </div>
 
 <script>
@@ -120,8 +121,9 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
   "use strict";
   var $=function(s){return document.querySelector(s)};
   var board=$("#board"), sub=$("#sub"), filters=$("#filters");
-  var db=null, uid=null, canWrite=null, items=[], filter="open", open=null;
-  try{ var f=localStorage.getItem("nudged.filter"); if(f) filter=f; }catch(e){}
+  var db=null, uid=null, canWrite=null, items=[], filter="open", open=null, opener=null;
+  try{ var f=localStorage.getItem("nudged.filter"); if(f && /^(open|need|wait|cal|done)$/.test(f)) filter=f; }catch(e){}
+  var loaded=false;
   filters.querySelectorAll(".chip").forEach(function(c){ c.setAttribute("aria-pressed", String(c.dataset.f===filter)); });
 
   var DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -132,14 +134,14 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
   function whenLine(p){
     var a=fmtDate(p.expected); if(!a) return p.status==="pending"? "No date yet" : "";
     var b=p.expected_end&&p.expected_end!==p.expected? " – "+fmtDate(p.expected_end):"";
-    var t=p.time? " · "+fmtTime(p.time):""; var tt=p.time_end? "–"+fmtTime(p.time_end):"";
+    var t=p.time? " · "+fmtTime(p.time):""; var tt=(p.time&&p.time_end)? "–"+fmtTime(p.time_end):"";
     return a+b+t+tt;
   }
   function fmtAt(s){ if(!s) return ""; var d=pd(s.slice(0,10)); if(!d) return s; return MON[d.getMonth()]+" "+d.getDate(); }
   function overdue(p){ var d=pd(p.expected); return !!(p.status==="pending" && d && d<today()); }
   function bucket(p){
     if(p.status==="done"||p.status==="dismissed"||p.status==="cancelled") return "done";
-    if(p.status==="scheduled") return "cal";
+    if(p.status==="scheduled"){ var end=pd(p.expected_end||p.expected); if(end && end<today()) return "done"; return "cal"; }
     if(p.needs_me||overdue(p)) return "need";
     return "wait";
   }
@@ -147,12 +149,14 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
     if(p.status==="cancelled") return "Cancelled";
     if(p.status==="dismissed") return "Dismissed";
     if(p.status==="done") return "Done";
+    if(p.status==="scheduled" && b==="done") return "Happened";
     if(p.manual && !(p.threads&&p.threads.length)) return "Watching for this";
     if(overdue(p)) return "Overdue";
     if(b==="need") return "Needs you";
     if(b==="cal") return p.kind==="event"? "On calendar" : "Booked";
     return "Waiting on them";
   }
+  function safeUrl(u){ return /^https?:\/\//i.test(String(u||"")) ? u : null; }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]}); }
   function hashTilt(id){ var h=0; for(var i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))|0; return ((h%7)-3)*0.6; }
   function sortKey(p){ var d=pd(p.expected); return d? d.getTime() : 8.64e15 - (Date.parse(p.updated_at||0)||0); }
@@ -164,6 +168,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
     Object.keys(counts).forEach(function(k){ var el=$("#n-"+k); if(el) el.textContent=counts[k]? counts[k] : ""; });
     var show=rows.filter(function(p){ var b=bucket(p); return filter==="open"? b!=="done" : b===filter; });
     board.innerHTML="";
+    if(!loaded){ sub.textContent="Loading your board…"; return; }
     if(!show.length){
       var e=document.createElement("p"); e.className="empty";
       e.innerHTML = items.length? "Nothing here right now." :
@@ -174,7 +179,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
       var b=bucket(p), btn=document.createElement("button");
       btn.className="note "+b+(p.manual&&!(p.threads&&p.threads.length)?" manual":"");
       btn.style.setProperty("--tilt", hashTilt(p.id)+"deg");
-      btn.setAttribute("aria-label", p.title);
+      btn.dataset.id=p.id;
       var tag=tagFor(p,b), over=overdue(p);
       btn.innerHTML =
         '<span class="tag'+(over?' over':'')+'">'+esc(tag)+'</span>'+
@@ -217,13 +222,14 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
         (p.nudged? '<dt>Nudged</dt><dd>'+esc(fmtAt(p.nudged))+'</dd>':'')+
       '</dl>'+
       '<div class="actions" id="acts">'+
-        (p.source_url? '<a class="btn" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">Open email</a>':'')+
-        (p.event_url? '<a class="btn" href="'+esc(p.event_url)+'" target="_blank" rel="noopener">Open calendar</a>':'')+
-        (b!=="done"? '<button class="btn primary" data-act="done">Done</button><button class="btn" data-act="dismissed">Dismiss</button>':'<button class="btn" data-act="pending">Reopen</button>')+
+        (safeUrl(p.source_url)? '<a class="btn" href="'+esc(p.source_url)+'" target="_blank" rel="noopener">Open email</a>':'')+
+        (safeUrl(p.event_url)? '<a class="btn" href="'+esc(p.event_url)+'" target="_blank" rel="noopener">Open calendar</a>':'')+
+        (b!=="done"? '<button class="btn primary" data-act="done">Done</button><button class="btn" data-act="dismissed">Dismiss</button>':(p.status==="cancelled"?'':'<button class="btn" data-act="'+(p.event?'scheduled':'pending')+'">Reopen</button>'))+
       '</div>'+
       '<p class="clipsh">'+(clips.length? "What was said" : "No clips yet")+'</p>'+
       clips.map(function(c){ return '<div class="clip"><span class="at">'+esc(fmtAt(c.at))+(c.from?' · '+esc(c.from):'')+'</span>'+esc(c.text)+(c.subject?'<span class="sub">'+esc(c.subject)+'</span>':'')+'</div>'; }).join("");
     scrim.appendChild(s); document.body.appendChild(scrim);
+    opener=document.activeElement; $("#closebtn").focus();
     $("#closebtn").addEventListener("click", closeSheet);
     scrim.addEventListener("click", function(ev){ if(ev.target===scrim) closeSheet(); });
     s.querySelectorAll("[data-act]").forEach(function(bt){
@@ -233,7 +239,7 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
     document.addEventListener("keydown", escClose);
   }
   function escClose(ev){ if(ev.key==="Escape") closeSheet(); }
-  function closeSheet(){ var sc=$("#scrim"); if(sc) sc.remove(); open=null; document.removeEventListener("keydown", escClose); }
+  function closeSheet(){ var sc=$("#scrim"); if(sc) sc.remove(); open=null; document.removeEventListener("keydown", escClose); if(opener&&opener.focus&&document.contains(opener)) opener.focus(); opener=null; }
 
   var toastT=null;
   function toast(msg){ var t=$("#toast"); if(!t){ t=document.createElement("div"); t.className="toast"; t.id="toast"; document.body.appendChild(t); }
@@ -244,28 +250,30 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
     if(!db) return;
     bt.disabled=true;
     var patch={status:status, updated_at:nowIso()};
-    if(status==="done"||status==="dismissed") patch.closed_at=nowIso();
+    if(status==="done"||status==="dismissed") patch.closed_at=nowIso(); else patch.closed_at=null;
     db.doc("postits/"+p.id).update(patch).then(function(){
       toast(status==="done"?"Marked done":status==="dismissed"?"Dismissed, the routine will leave it alone":"Reopened");
       closeSheet();
-    }).catch(function(e){
-      bt.disabled=false;
-      if(e&&e.code==="invalid_argument"){ canWrite=false; $("#ro").hidden=false; toast("This board is read-only for you"); }
-      else toast("Couldn't save, try again");
-    });
+    }).catch(function(e){ bt.disabled=false; writeErr(e); });
   }
 
+  function writeErr(e){
+    var c=e&&e.code;
+    if(c==="invalid_argument"||c==="revoked"||c==="not_granted"||c==="capability_disabled"){ canWrite=false; $("#ro").hidden=false; $("#addform").hidden=true; toast("This board is read-only for you"); }
+    else if(c==="quota_exceeded"){ toast("The board is full. Dismiss or delete old notes first."); }
+    else toast("Couldn't save, try again");
+  }
   $("#addform").addEventListener("submit", function(ev){
     ev.preventDefault();
     var inp=$("#addtext"), v=inp.value.trim(); if(!v||!db) return;
     var btn=$("#addbtn"); btn.disabled=true;
     var ref=db.collection("postits").doc();
     ref.set({ title:v, kind:"commitment", status:"pending", manual:true, needs_me:false,
-      who:"", expected:null, expected_end:null, time:null, threads:[], msgs:0, event:null, event_url:null, source_url:null,
+      who:"", expected:null, expected_end:null, time:null, time_end:null, location:null, subject:null, threads:[], msgs:0, event:null, event_url:null, source_url:null,
       nudged:null, note:"Added by hand. The next hourly run looks for a matching email thread.", clips:[],
       created_at:nowIso(), updated_at:nowIso() })
     .then(function(){ inp.value=""; toast("Stuck on the board"); })
-    .catch(function(e){ if(e&&e.code==="invalid_argument"){ canWrite=false; $("#ro").hidden=false; toast("This board is read-only for you"); } else toast("Couldn't save, try again"); })
+    .catch(writeErr)
     .then(function(){ btn.disabled=false; });
   });
 
@@ -273,9 +281,10 @@ h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;letter-spa
   if(!window.claude||!window.claude.use){ sub.textContent="Open this page inside Claude to see your board."; return; }
   Promise.all([window.claude.use("db"), window.claude.use("user")]).then(function(r){
     db=r[0]; var user=r[1];
-    if(!db){ sub.textContent="Sign in to see your board."; $("#addform").hidden=true; return; }
+    if(!db){ loaded=true; sub.textContent="Sign in to see your board."; $("#addform").hidden=true; board.innerHTML=""; return; }
     if(user){ user.can("data.write").then(function(w){ canWrite=w; if(w===false){ $("#ro").hidden=false; $("#addform").hidden=true; } }).catch(function(){}); }
     db.collection("postits").onSnapshot(function(snap){
+      loaded=true;
       items=snap.docs.filter(function(d){return d.exists}).map(function(d){ var o=Object.assign({},d.data()); o.id=d.id; return o; });
       render();
       if(open) { var still=items.some(function(x){return x.id===open}); if(!still) closeSheet(); }
