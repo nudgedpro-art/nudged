@@ -2,6 +2,7 @@ import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 const extra = (Constants.expoConfig?.extra ?? {}) as { supabaseUrl: string; supabaseKey: string; siteUrl: string };
 export const SUPABASE_URL = extra.supabaseUrl;
@@ -10,7 +11,8 @@ export const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
 
 export const supabase = createClient(SUPABASE_URL, extra.supabaseKey, {
   auth: {
-    storage: AsyncStorage,
+    // AsyncStorage touches window on web; let supabase-js use localStorage there (and nothing during server render).
+    ...(Platform.OS === "web" ? {} : { storage: AsyncStorage }),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
