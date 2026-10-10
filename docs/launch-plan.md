@@ -77,7 +77,7 @@ Total: 6 to 10 weeks from first submission for a prepared solo founder; plan 3 m
 
 **Milestones.**
 - M0 (week 1): D-U-N-S application, entity, Apple and Google developer accounts, nudged.pro DNS and privacy policy, Google Cloud project, brand verification submitted.
-- M1 (weeks 2 to 4): backend: `profiles`, `google_connections`, `notes`, Vault token storage, Gmail watch, Haiku triage plus Sonnet extraction, Calendar write, silence detection, deletion endpoint. Web demo flow recorded for the Google video; sensitive and restricted scope submissions sent.
+- M1 (weeks 2 to 4) — SHIPPED 2026-10-10 except the demo video and Pub/Sub push (polling every 15 min instead): backend: `profiles`, `google_connections`, `notes`, Vault token storage, Gmail watch, Haiku triage plus Sonnet extraction, Calendar write, silence detection, deletion endpoint. Web demo flow recorded for the Google video; sensitive and restricted scope submissions sent.
 - M2 (weeks 4 to 7): Expo app: onboarding with both consent screens, Google and Apple sign-in, board, item detail, push, share sheet, settings with delete account, RevenueCat paywall. TestFlight and a Play closed test (12 testers for 14 days if still on a personal account).
 - M3 (weeks 7 to 10): CASA scan, fix, SAQ, LOA. App Store and Play submissions. Expect one rejection each; answer with the IAP already in place.
 - M4 (weeks 10 to 14): public release once Google restricted approval and store approvals coincide.
