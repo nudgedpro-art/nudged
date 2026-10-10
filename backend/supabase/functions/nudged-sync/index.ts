@@ -76,6 +76,7 @@ Rules
 - who: "Name, organisation" of the other party, never an email address.
 - Cancellation or postponement: status "cancelled" (or "pending" if a new date is expected), never delete.
 - A reply from the user that resolves what they owed: needs_me false. A reply from the other party that closes the loop with nothing further expected: status "done".
+- If a plan or deadline has a known date that already passed, keep that date in expected (never blank it); set status "pending" and needs_me true so the person checks what happened.
 - Titles are short and neutral (no dates). Keep medical, insurance and financial detail out of titles.
 - clips are 1–3 sentence paraphrases of what a message added, never pasted text.
 - note is one or two plain sentences on where things stand right now.
