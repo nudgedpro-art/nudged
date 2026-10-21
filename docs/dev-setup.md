@@ -60,7 +60,7 @@ Claude Code keeps per-machine notes in `~/.claude/projects/<folder>/memory/`. Th
 | Task | Command |
 |---|---|
 | Deploy an edge function | `cd backend && supabase functions deploy <name> --project-ref sdtbdrrcppjeilwhvwbw --no-verify-jwt` |
-| Apply a migration | paste the SQL through the Supabase connector, or `supabase db push` once the project is linked |
+| Apply a migration | `scripts/deploy-backend.sh migrate` (runs the new files directly; earlier ones were applied by hand) |
 | Deploy the site | Netlify connector's deploy-site, or `netlify deploy --prod --dir site` after `netlify login` |
 | Run the phone app | `cd app && npx expo run:ios` |
 | Typecheck the app | `cd app && npx tsc --noEmit` |
