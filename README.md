@@ -15,7 +15,13 @@ backend/supabase/                    licence store + Stripe webhook (one small S
   functions/license-check/           GET ?key= → {valid, plan, renews, limits}
   functions/free-signup/             POST {email} → free-plan key by email, no Stripe
   functions/stripe-webhook/          Stripe events → issue / update / revoke keys, upgrade free keys, email the key
+  functions/nudged-sync/             the app's routine (Gmail → notes → Calendar), every 15 min
+  functions/whatsapp-webhook/        Meta Cloud API webhook: link codes, forwarded messages → notes, replies
+  functions/ingest/                  the app's share-sheet → notes (same pipeline)
+  functions/channel-link/            link / unlink WhatsApp for the signed-in user
+  functions/_shared/                 google.ts (Gmail, Calendar), notes.ts (prompts, apply), plan.ts (limits), channels.ts (hand-off pipeline)
   migrations/0003_free_plan.sql      plan 'free', one free key per email, signup rate limit
+  migrations/0004_channels.sql       channel_links, link_codes, inbound_messages; notes.source
 site/index.html                      landing page with the Stripe Payment Link
 ```
 
@@ -44,6 +50,17 @@ site/index.html                      landing page with the Stripe Payment Link
 4. **Site.** Deploy `site/` (Netlify). Test the free form with a throwaway address: key email arrives, `/nudged:setup` reports "Free plan", a run creates notes with `pro_hint` and no calendar events.
 5. **Upgrade path.** Subscribe with that same address in Stripe test mode: the webhook should upgrade the existing row (no second key), the "now Pro" email arrives, and the next run creates calendar events and drafts.
 6. **Plugin.** Tag 1.1.0; existing installs pick it up on their next `/plugin update`. Resubmit to the directory with the new disclosure (drafts, never sends).
+
+## WhatsApp rollout (after 1.1.0), in order
+
+Spec: `docs/forward-to-nudged.md`. Pro feature; free users who forward get a one-line upgrade reply.
+
+1. **Database.** Apply `migrations/0004_channels.sql`. Add an hourly pg_cron job: `select public.inbound_scrub_stale();`.
+2. **Meta.** Business account under Dockhand Inc. → app with the WhatsApp product → a number not on any personal WhatsApp → display name "Nudged". Webhook URL `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/whatsapp-webhook`, field `messages`, verify token = whatever you set below.
+3. **Secrets.** `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN` (system-user token), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_NUMBER` (E.164 digits, for `wa.me` links).
+4. **Functions.** Deploy `whatsapp-webhook` (`verify_jwt=false`), `ingest` and `channel-link` (`verify_jwt=true`), and redeploy `nudged-sync` (now shares the extraction module and honours plan limits).
+5. **App.** Settings → Connect WhatsApp (`POST channel-link` → open `wa_url`), WhatsApp badge on notes, share-sheet via `expo-share-intent` → `POST ingest`. Privacy and consent copy per spec §6.
+6. **Test.** Link your own number with the code flow; forward a text with a date; expect the "Got it" reply, a note with `source='whatsapp'`, and (on Pro) a calendar event. Forward something with no date and expect "couldn't find". Downgrade the licence row to free and expect the upgrade line.
 
 ## Things that are deliberately not here
 
