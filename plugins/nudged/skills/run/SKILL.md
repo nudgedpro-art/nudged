@@ -12,26 +12,28 @@ Read `~/.claude/nudged/config.json` with the Read tool (never with a shell).
 
 Required keys: `license_key`, `board_url`, `calendar_id`, `timezone`, `email`, `gmail_prefix`, `calendar_prefix`, `seen_label_id`. If the file is missing or any key is absent, output exactly `Nudged: setup is incomplete (<missing keys>). Run /nudged:setup.` and stop.
 
-Check the licence with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<license_key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid": true|false, "plan", "renews", "message" }`. Do not use a shell for this.
+Check the licence with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<license_key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid": true|false, "plan", "renews", "message", "limits": { "open_notes", "lookback_days", "calendar_writes", "drafts" } }`. Do not use a shell for this.
 
-- `"valid": true` → continue.
+- `"valid": true` → keep `plan` and `limits` for this run and continue. If `limits` is absent (older server), use `{ open_notes: null, lookback_days: 2, calendar_writes: true, drafts: true }`.
 - `"valid": false` → output `Nudged: licence inactive (<message>). Manage your subscription from the link in your Stripe receipt.` Then, if a document `nudged-paused` does not exist on the board, `set` one: title "Nudged is paused: licence inactive", kind commitment, status pending, manual true, needs_me true, note = the message, other fields null or empty. Stop.
 - Anything else (WebFetch unavailable, no response, no JSON, 5xx) → output `Nudged: licence service unreachable, skipping this run.` Stop. Do not treat this as inactive.
 
 ## Tools
 
 Load with ToolSearch `select:` by exact name, using the prefixes from config:
-- Gmail: `<gmail_prefix>search_threads`, `<gmail_prefix>get_thread`, `<gmail_prefix>label_message`, `<gmail_prefix>update_message_labels`.
-- Calendar: `<calendar_prefix>create_event`, `<calendar_prefix>update_event`, `<calendar_prefix>get_event`.
+- Gmail: `<gmail_prefix>search_threads`, `<gmail_prefix>get_thread`, `<gmail_prefix>label_message`, `<gmail_prefix>update_message_labels`, and when `limits.drafts` is true, `<gmail_prefix>create_draft`.
+- Calendar (only when `limits.calendar_writes` is true): `<calendar_prefix>create_event`, `<calendar_prefix>update_event`, `<calendar_prefix>get_event`.
 - Board: `ArtifactData` (actions list, get, set, update, batch), always with `url` = `board_url`. Every write to an existing document must carry the `if_version` from your last read of it. Write each document at most once per run: accumulate changes and write at the end.
 
-If a Gmail or Calendar tool is not found, output `Nudged: <Gmail|Calendar> connector not available this run.` and stop.
+If a Gmail tool is not found, or a Calendar tool is not found while `limits.calendar_writes` is true, output `Nudged: <Gmail|Calendar> connector not available this run.` and stop.
 
 ## 1. Board gate
 
 ArtifactData `list` collection `postits` (limit 500). If this fails for any reason, output `Nudged: board unreachable (<error>). If you deleted the board, run /nudged:setup to publish a new one. Nothing was read or labelled.` and stop. Do not touch Gmail.
 
 Index known thread ids → document. Documents with status `done` or `dismissed` are frozen: never update them, never re-create a note for their threads, never touch their calendar event. `cancelled` is frozen unless a new date appears in its thread.
+
+**Plan limit.** Count open documents (status `pending` or `scheduled`, excluding doc_id `nudged-limit` and `nudged-paused`). If `limits.open_notes` is a number and the count is at or above it, this run is **at the limit**: steps 2 and 3 still run (existing notes stay current), step 4 is skipped, and a document `nudged-limit` is `set` (or left as is if present and pending): title "Board is full: <limits.open_notes> open notes on the free plan", kind commitment, status pending, manual true, needs_me true, `pro_hint: "limit"`, note "Mark some notes done or dismissed to make room, or upgrade to Pro for no limit: https://nudged.pro/#pro". If the count is below the limit and `nudged-limit` exists with status pending, `update` it to status done. Never create `nudged-limit` on a plan with `open_notes` null.
 
 ## What a note is
 
@@ -56,6 +58,9 @@ threads          [Gmail threadIds]          msgs  total messages seen across the
 event            Calendar eventId | null    event_url  the event's htmlLink | null
 source_url       Gmail viewUrl of the main thread   subject  its subject
 nudged           "YYYY-MM-DD" of last nudge | null
+draft_id         Gmail draft id of the latest drafted chase | null
+draft_url        its viewUrl | null
+pro_hint         null | "calendar" | "draft" | "limit"   set on free-plan notes where Pro would have acted
 note             one or two plain sentences on where things stand right now
 clips            [{at:"YYYY-MM-DD", from:"first name or org", text:"1-3 sentence paraphrase", subject:"..."}]
 created_at, updated_at   ISO timestamps
@@ -73,7 +78,9 @@ For every pending or scheduled document with thread ids, `get_thread` (messageFo
 
 ## 4. Find new material
 
-`search_threads` query `newer_than:2d -label:<seen_label_id> -category:promotions -category:social -category:forums`, pageSize 50; follow `nextPageToken` up to 5 pages. Sent mail matters most: the user's own replies are where they make commitments. For each thread not already indexed, `get_thread` (PLAIN_TEXT) and read only the messages whose `label_ids` lack `seen_label_id`.
+Skip this whole step when the run is at the plan limit (board gate).
+
+`search_threads` query `newer_than:<limits.lookback_days>d -label:<seen_label_id> -category:promotions -category:social -category:forums`, pageSize 50; follow `nextPageToken` up to 5 pages. Sent mail matters most: the user's own replies are where they make commitments. For each thread not already indexed, `get_thread` (PLAIN_TEXT) and read only the messages whose `label_ids` lack `seen_label_id`.
 
 SKIP anything automated: newsletters, receipts, order confirmations, calendar invites, developer-tool alerts, marketing, no-reply senders, mailing lists, mass forwards to long recipient lists. EXCEPTION: a shipping, delivery, pickup or return notice that names a specific date for the user's own address DOES qualify as an event. Only human-to-human mail with a real commitment or a real dated plan qualifies otherwise. When unsure, skip; a missed note is better than a noisy one.
 
@@ -83,7 +90,7 @@ Resolve relative dates against the message's own send date in `timezone` ("Frida
 
 - a. Match to an existing note first by thread id, then by same other party plus same date, then by clearly the same topic. Only create a new document when nothing matches.
 - b. New commitment with no firm date/time yet → `set` a new document, status `pending`, one clip, `needs_me` per the definition above.
-- c. Commitment that now has a firm date (a confirming reply, or the original message already fixed it) → `create_event` on `calendar_id` with `timeZone` = config timezone: summary prefixed "📌 ". Timed: startTime/endTime as local wall-clock ISO strings in that zone, 1 hour unless a range is stated. All-day: `allDay` true, startTime = the date at 00:00, endTime = the day AFTER the last day at 00:00 (Google's all-day end is exclusive), availability AVAILABILITY_FREE. Description = the note plus key facts, then the line `— Nudged, kept up to date automatically. Source: <subject>`. Store `event` and `event_url` (htmlLink), set status `scheduled`, `expected` and `time`.
+- c. Commitment that now has a firm date (a confirming reply, or the original message already fixed it) → **if `limits.calendar_writes` is false:** set status `scheduled`, `expected` and `time`, leave `event` and `event_url` null, set `pro_hint: "calendar"`, and skip the calendar entirely (also in d and e). **Otherwise** `create_event` on `calendar_id` with `timeZone` = config timezone: summary prefixed "📌 ". Timed: startTime/endTime as local wall-clock ISO strings in that zone, 1 hour unless a range is stated. All-day: `allDay` true, startTime = the date at 00:00, endTime = the day AFTER the last day at 00:00 (Google's all-day end is exclusive), availability AVAILABILITY_FREE. Description = the note plus key facts, then the line `— Nudged, kept up to date automatically. Source: <subject>`. Store `event` and `event_url` (htmlLink), set status `scheduled`, `expected` and `time`.
 - d. New event-type plan → same as (c) immediately. Multi-day plans become all-day events spanning the range (`expected_end` set).
 - e. New clip on a note that already has an event → update the document AND `update_event` so the event description is a compiled, current note: what, who, when, where, what to bring, open questions, then the source line. Under 1500 characters. If the date or time changed, update the event's start and end too.
 - f. Cancellation ("let's push it", "cancel", "not this weekend") → do NOT delete anything. Append the clip, set status `cancelled`, note "cancelled/postponed per <who> on <date>", and if there is an event prefix its summary with "❌ " and keep it. If a new date is expected, set status `pending` instead.
@@ -93,6 +100,12 @@ Resolve relative dates against the message's own send date in `timezone` ("Frida
 
 For each pending document whose `expected` date has passed by at least 1 day, or with no new message for 5 days, and whose `nudged` date is not within the last 3 days: append a clip `{from:"Nudged", text:"Nudge: no follow-up since <last message date>. Chase <who>?"}`, set `needs_me` true and `nudged` to today. Never email or text anyone on the user's behalf.
 
+**Drafted chase (Pro).** When `limits.drafts` is true and the note has at least one thread whose last message was not sent by the user, also `create_draft`: `replyToMessageId` = the id of the latest message in the main thread, `to` = the other party's address from that message, `subject` = the thread subject with "Re: " if missing, `body` = two to four plain sentences in the user's voice: what was agreed (from the clips), the date that passed or the quiet since, and one direct question. No greeting flourish, no apology, no markdown. End with a blank line and `Sent with a nudge from Nudged · nudged.pro`. If the note already has a `draft_id`, do not create another; leave it. Store the returned `id` as `draft_id` and `viewUrl` as `draft_url`. Never send the draft. If `create_draft` fails, record nothing and carry on.
+
+When `limits.drafts` is false, set `pro_hint: "draft"` on the nudged note instead.
+
+**Upgrade catch-up.** On a run where `limits.calendar_writes` is true, every `scheduled` note with `event` null and `pro_hint` "calendar" gets its event created as in 5c and `pro_hint` set to null. Where `limits.drafts` is true, every pending note with `pro_hint` "draft" and no `draft_id` gets its drafted chase now and `pro_hint` set to null. Where `limits.open_notes` is null, a pending `nudged-limit` document is set to done.
+
 ## 7. Write, then mark processed
 
 Write all accumulated document changes (use `batch` for more than two; `updated_at` = now on each). If a write fails with a version conflict, re-read that document and apply the change once more; if it fails again, leave it and mention it in the summary.
@@ -101,11 +114,11 @@ Only after the board writes succeed, `label_message` every message you read this
 
 ## Hard rules
 
-- Never send, reply to, forward, trash, or archive any email. Never mark spam.
+- Never send, reply to, forward, trash, or archive any email. Never mark spam. A draft is the most Nudged ever writes, and only on Pro.
 - Never delete a calendar event. Never modify a calendar event whose description does not contain "— Nudged," or "— Post-it," (those are the user's own).
 - Never delete a document from the board. Never change a document whose status is done or dismissed.
 - Be conservative. Zero new notes is a fine result. Noise destroys trust in this tool.
 
 ## Output
 
-At most six lines: `Created: <n> (<titles>)`, `Updated: <n> (<titles>)`, `Nudges: <n> (<titles>)`, `Skipped connector errors: <n>` only if nonzero. If nothing happened: the single line `Nudged: nothing new this run.`
+At most six lines: `Created: <n> (<titles>)`, `Updated: <n> (<titles>)`, `Nudges: <n> (<titles>)`, `Drafts: <n>` only if nonzero, `Skipped connector errors: <n>` only if nonzero, `Free plan: board at the 30-note limit, nothing new created.` only when at the limit. If nothing happened: the single line `Nudged: nothing new this run.`

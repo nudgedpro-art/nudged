@@ -17,18 +17,20 @@ Website: https://nudged.pro · Support: hello@nudged.pro · Sold by Dockhand Inc
 - Google Calendar: the primary calendar id and timezone, and events the routine created.
 
 **Writes**
-- Gmail: adds a hidden label (`Nudged/Seen`) to each message it has read, so nothing is read twice. It never sends, replies to, forwards, archives, trashes or marks spam.
-- Google Calendar: creates and updates events for confirmed plans. Every event it writes carries "— Nudged," in its description and it only ever edits those. It never deletes an event.
+- Gmail: adds a hidden label (`Nudged/Seen`) to each message it has read, so nothing is read twice. On the Pro plan, when a thread goes quiet it creates a **draft** reply on that thread for you to read and send; the draft ends with the line "Sent with a nudge from Nudged · nudged.pro". It never sends, replies to, forwards, archives, trashes or marks spam.
+- Google Calendar (Pro plan): creates and updates events for confirmed plans. Every event it writes carries "— Nudged," in its description and it only ever edits those. It never deletes an event.
 - Your board: an Artifact page published in your own Claude account with a small database (collection `postits`). Notes hold names, paraphrased summaries, dates, places and Gmail thread ids. This data stays in your Claude account.
 - Your machine: `~/.claude/nudged/config.json` (licence key, board URL, calendar id, connector prefixes) and, if you agree during setup, entries in `~/.claude/settings.json` under `permissions.allow`.
 
 **Sends off-platform (the only external call)**
-- Before each run, and once during setup, the plugin fetches `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<your licence key>` over HTTPS. The request contains the licence key and nothing else. Our server records the time of the check and a count. No email, calendar or board content is ever sent.
+- Before each run, and once during setup, the plugin fetches `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<your licence key>` over HTTPS. The request contains the licence key and nothing else; the response says whether the key is active, which plan it is on, and the plan's limits. Our server records the time of the check and a count. No email, calendar or board content is ever sent.
 
 ## What our service stores
 
-Licence key, the email address given to Stripe at checkout, plan and billing status, Stripe customer and subscription ids, and the time and count of licence checks. Kept while the subscription is active and for 12 months after it ends. Privacy policy: https://nudged.pro/privacy.html · Terms: https://nudged.pro/terms.html
+Licence key, the email address given at signup or to Stripe at checkout, plan (free or Pro) and billing status, Stripe customer and subscription ids, and the time and count of licence checks. Kept while the subscription is active and for 12 months after it ends. Privacy policy: https://nudged.pro/privacy.html · Terms: https://nudged.pro/terms.html
 
 ## Requirements
 
-A Claude plan with the desktop app and Claude Code, with the Gmail and Google Calendar connectors enabled. The routine runs while the desktop app is open. CA$9/month after a 14-day free trial, HST included; subscribe at https://nudged.pro.
+A Claude plan with the desktop app and Claude Code, with the Gmail and Google Calendar connectors enabled. The routine runs while the desktop app is open. Free plan: one mailbox, up to 30 open notes, nudges on the board. Pro: CA$9/month or CA$90/year after a 14-day trial, HST included, adds calendar events, drafted follow-ups and no note limit. Keys at https://nudged.pro.
+
+Install: `/plugin install nudged --marketplace nudgedpro-art/nudged`

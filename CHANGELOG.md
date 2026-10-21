@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 — 2026-10-21
+
+Free plan and drafted follow-ups.
+
+- Free plan: one Gmail account, the board, nudges, up to 30 open notes, no calendar writes. Keys issued from nudged.pro without a card (`free-signup`). A free key becomes a Pro key when the same email subscribes; nothing to reinstall.
+- Pro: when a nudge fires, Nudged writes a Gmail draft of the follow-up as a reply on the thread and the note gets an "Open drafted follow-up" button. Nudged still never sends.
+- Licence check now returns `plan` and `limits`; the run skill applies them instead of hard-coding behaviour. A cancelled subscription falls back to the free plan rather than a dead key.
+- Board: Pro hints on free-plan notes ("On Pro this would be on your calendar"), a full-board notice at the limit.
+- Yearly price (CA$90) on the site. Docs: `product-model.md`, `forward-to-nudged.md`.
+
 ## 1.0.1 — 2026-10-09
 
 - Skills no longer use a shell: config is read with Read, the licence check uses WebFetch, setup writes files with Write. Removes the pre-approved shell commands the directory flags.

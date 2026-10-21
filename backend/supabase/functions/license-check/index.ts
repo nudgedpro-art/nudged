@@ -1,6 +1,10 @@
 // GET /license-check?key=ND-XXXX-XXXX-XXXX-XXXX
 // Called by the plugin's run and setup skills. Read-only apart from a usage stamp.
 // Deploy with verify_jwt=false: the caller is a Claude session with no Supabase user.
+//
+// Response: { valid, plan, renews, message, limits }
+//   plan    free | monthly | yearly
+//   limits  what the skill should apply for this plan; the plugin never hard-codes these.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -11,6 +15,13 @@ const supabase = createClient(
 
 const KEY_RE = /^ND-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
 const GRACE_DAYS = 3; // keep running a little past a failed renewal
+
+type Limits = { open_notes: number | null; lookback_days: number; calendar_writes: boolean; drafts: boolean };
+const LIMITS: Record<string, Limits> = {
+  free:    { open_notes: 30,   lookback_days: 2, calendar_writes: false, drafts: false },
+  monthly: { open_notes: null, lookback_days: 2, calendar_writes: true,  drafts: true },
+  yearly:  { open_notes: null, lookback_days: 2, calendar_writes: true,  drafts: true },
+};
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -38,14 +49,22 @@ Deno.serve(async (req) => {
 
   let valid = false;
   let message = "";
-  if (lic.status === "active") {
+  let plan: string = lic.plan;
+  if (lic.plan === "free") {
+    // Free rows never expire; status is the only switch (set to cancelled to revoke).
+    valid = lic.status === "active";
+    message = valid ? "Free plan" : "This free key was turned off.";
+  } else if (lic.status === "active") {
     valid = !graceEnd || now <= graceEnd;
     message = valid ? "Active" : "Your subscription period ended.";
   } else if (lic.status === "past_due") {
     valid = !!graceEnd && now <= graceEnd;
     message = valid ? "Payment failed, running on grace period." : "Payment failed and the grace period ended.";
   } else {
-    message = "Subscription cancelled.";
+    // A cancelled subscriber keeps a working key on the free plan rather than a dead one.
+    valid = true;
+    plan = "free";
+    message = "Subscription cancelled; running on the free plan. Resubscribe at nudged.pro to get Pro back.";
   }
 
   // Usage stamp; failure here never affects the answer.
@@ -56,8 +75,9 @@ Deno.serve(async (req) => {
 
   return json({
     valid,
-    plan: lic.plan,
-    renews: periodEnd ? periodEnd.toISOString().slice(0, 10) : null,
+    plan,
+    renews: plan === "free" ? null : periodEnd ? periodEnd.toISOString().slice(0, 10) : null,
     message,
+    limits: LIMITS[plan] ?? LIMITS.free,
   });
 });
