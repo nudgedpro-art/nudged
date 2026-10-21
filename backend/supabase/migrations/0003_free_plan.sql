@@ -1,10 +1,11 @@
 -- Free plan. A licence row can now exist without Stripe.
--- plan: free | monthly | yearly. Free rows have no subscription and no period end.
+-- plan: free | trial | monthly | yearly. Free rows have no subscription and no period end;
+-- trial rows come from the app's ensure_license_for_user and expire into free.
 
 alter table public.licenses
   drop constraint if exists licenses_plan_check;
 alter table public.licenses
-  add constraint licenses_plan_check check (plan in ('free', 'monthly', 'yearly'));
+  add constraint licenses_plan_check check (plan in ('free', 'trial', 'monthly', 'yearly'));
 
 -- One free key per email, so a lapsed subscriber cannot farm free keys.
 create unique index if not exists licenses_free_email_idx

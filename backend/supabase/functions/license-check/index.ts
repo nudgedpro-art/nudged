@@ -19,6 +19,7 @@ const GRACE_DAYS = 3; // keep running a little past a failed renewal
 type Limits = { open_notes: number | null; lookback_days: number; calendar_writes: boolean; drafts: boolean };
 const LIMITS: Record<string, Limits> = {
   free:    { open_notes: 30,   lookback_days: 2, calendar_writes: false, drafts: false },
+  trial:   { open_notes: null, lookback_days: 2, calendar_writes: true,  drafts: true },
   monthly: { open_notes: null, lookback_days: 2, calendar_writes: true,  drafts: true },
   yearly:  { open_notes: null, lookback_days: 2, calendar_writes: true,  drafts: true },
 };
@@ -54,6 +55,11 @@ Deno.serve(async (req) => {
     // Free rows never expire; status is the only switch (set to cancelled to revoke).
     valid = lic.status === "active";
     message = valid ? "Free plan" : "This free key was turned off.";
+  } else if (lic.plan === "trial") {
+    // App-side 14-day trial: Pro until it ends, then the free plan.
+    valid = true;
+    if (lic.status === "active" && periodEnd && now <= periodEnd) message = "Pro trial";
+    else { plan = "free"; message = "Trial ended; running on the free plan. Subscribe at nudged.pro to keep Pro."; }
   } else if (lic.status === "active") {
     valid = !graceEnd || now <= graceEnd;
     message = valid ? "Active" : "Your subscription period ended.";
@@ -76,7 +82,7 @@ Deno.serve(async (req) => {
   return json({
     valid,
     plan,
-    renews: plan === "free" ? null : periodEnd ? periodEnd.toISOString().slice(0, 10) : null,
+    renews: plan === "free" ? null : periodEnd ? periodEnd.toISOString().slice(0, 10) : null,   // for trial: the trial end
     message,
     limits: LIMITS[plan] ?? LIMITS.free,
   });

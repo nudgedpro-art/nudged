@@ -53,7 +53,7 @@ Everything in Free, plus:
 
 ### Licence rows
 
-`licenses.plan` is one of `free | monthly | yearly` (Team adds `team` with a seat count later). `license-check` returns the plan and the limits the skill should apply, so the plugin never hard-codes a limit:
+`licenses.plan` is one of `free | trial | monthly | yearly` (`trial` is the app's 14-day start and expires into `free`; Team adds `team` with a seat count later). `license-check` returns the plan and the limits the skill should apply, so the plugin never hard-codes a limit:
 
 ```json
 { "valid": true, "plan": "free", "renews": null, "message": "Free plan",
