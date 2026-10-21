@@ -12,9 +12,9 @@ Load `mcp__scheduled-tasks__create_scheduled_task`, `mcp__scheduled-tasks__list_
 
 ## 1. Licence key
 
-Ask for the licence key from the purchase email (format `ND-XXXX-XXXX-XXXX-XXXX`). If `~/.claude/nudged/founder-key.txt` exists, offer its contents as the default. Check it with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid", "plan", "renews", "message" }`. Never use a shell for this.
+Ask for the licence key from the email Nudged sent (format `ND-XXXX-XXXX-XXXX-XXXX`; free and Pro keys look the same). If they have none, say a free key takes a minute at https://nudged.pro/#free and wait. If `~/.claude/nudged/founder-key.txt` exists, offer its contents as the default. Check it with WebFetch on `https://sdtbdrrcppjeilwhvwbw.supabase.co/functions/v1/license-check?key=<key>` (prompt: "Return the JSON body verbatim"). The body is JSON `{ "valid", "plan", "renews", "message", "limits" }`. Never use a shell for this.
 
-- `"valid": true` → continue.
+- `"valid": true` → tell them the plan in one line ("Free plan: one mailbox, up to 30 open notes, nudges on the board. Pro adds calendar events and drafted follow-ups." or "Pro, renews <renews>.") and continue.
 - `"valid": false` → tell the user the `message` and say: "Manage or restart your subscription from the link in your Stripe receipt, or email hello@nudged.pro." Stop.
 - Anything else (WebFetch unavailable, no response, no JSON) → say the licence service could not be reached, ask them to try again in a few minutes. Stop.
 
@@ -22,7 +22,7 @@ Ask for the licence key from the purchase email (format `ND-XXXX-XXXX-XXXX-XXXX`
 
 Say this, then ask "OK to continue?" and wait for a yes:
 
-"Every hour, inside your own Claude, Nudged reads Gmail threads from the last two days (skipping promotions, social and forum mail), looks for promises and dated plans, and tags each message it has read with a hidden Gmail label so it is never read twice. It writes notes to a private board page that only you can open, and creates calendar events for confirmed plans, each marked so it only ever edits its own. It never sends, replies to, forwards, archives or deletes email, never deletes a calendar event, and your mail never leaves your Claude."
+"Every hour, inside your own Claude, Nudged reads Gmail threads from the last two days (skipping promotions, social and forum mail), looks for promises and dated plans, and tags each message it has read with a hidden Gmail label so it is never read twice. It writes notes to a private board page that only you can open. On Pro it also creates calendar events for confirmed plans, each marked so it only ever edits its own, and when something goes quiet it writes a Gmail draft of the follow-up for you to read and send. It never sends, replies to, forwards, archives or deletes email, never deletes a calendar event, and your mail never leaves your Claude."
 
 ## 3. Connectors
 
@@ -58,8 +58,8 @@ The routine runs unattended, so every tool it uses must be approved in advance o
 - `ArtifactData`
 - `Read(~/.claude/nudged/config.json)`
 - `WebFetch(domain:sdtbdrrcppjeilwhvwbw.supabase.co)`
-- `<gmail_prefix>search_threads`, `<gmail_prefix>get_thread`, `<gmail_prefix>label_message`, `<gmail_prefix>update_message_labels`, `<gmail_prefix>list_labels`
-- `<calendar_prefix>create_event`, `<calendar_prefix>update_event`, `<calendar_prefix>get_event`
+- `<gmail_prefix>search_threads`, `<gmail_prefix>get_thread`, `<gmail_prefix>label_message`, `<gmail_prefix>update_message_labels`, `<gmail_prefix>list_labels`, `<gmail_prefix>create_draft` (drafts, never sends; used on Pro)
+- `<calendar_prefix>create_event`, `<calendar_prefix>update_event`, `<calendar_prefix>get_event` (used on Pro)
 
 On yes: Read `~/.claude/settings.json` (treat a missing file as `{}`), merge the entries into `permissions.allow` without removing anything that is already there, and write it back with the Write tool, keeping the existing formatting. No shell commands anywhere in setup. On no: continue, but say the first run will ask for each approval and later runs reuse them.
 
@@ -71,7 +71,7 @@ On yes: Read `~/.claude/settings.json` (treat a missing file as `{}`), merge the
 - description `Hourly Nudged routine: reads new email for promises and dated plans, updates the board and Google Calendar.`
 - cronExpression `0 7-22 * * *` (local time)
 - notifyOnCompletion false
-- prompt, exactly: `Use the Skill tool to load the skill "nudged:run" and follow it completely. This task explicitly asks you to perform these writes every run: add the Seen label to Gmail messages you read; create and update Google Calendar events whose description contains "— Nudged," or "— Post-it,"; create and update documents in the board's "postits" collection with ArtifactData. Never send or delete email, never delete a calendar event.`
+- prompt, exactly: `Use the Skill tool to load the skill "nudged:run" and follow it completely. This task explicitly asks you to perform these writes every run: add the Seen label to Gmail messages you read; create and update Google Calendar events whose description contains "— Nudged," or "— Post-it,"; create Gmail drafts (never send them); create and update documents in the board's "postits" collection with ArtifactData. Never send or delete email, never delete a calendar event.`
 
 Then, for every other task in the list, Read its `path`; if that file mentions the configured `board_url` or the Seen label, call `update_scheduled_task` with `enabled: false` on it and tell the user it was paused because Nudged now does that job.
 

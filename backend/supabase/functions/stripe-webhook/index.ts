@@ -65,12 +65,67 @@ async function sendKeyEmail(to: string, key: string) {
   if (!r.ok) throw new Error(`resend failed ${r.status}: ${await r.text()}`);
 }
 
+async function sendUpgradeEmail(to: string, key: string) {
+  const body = [
+    `Thanks for upgrading to Nudged Pro.`,
+    ``,
+    `Your existing key is now a Pro key: ${key}`,
+    ``,
+    `Nothing to reinstall. The next hourly run picks it up: confirmed plans go on your calendar, nudges come with a drafted follow-up, and the 30-note limit is gone.`,
+    ``,
+    `Manage or cancel any time from the link in your Stripe receipt.`,
+  ].join("\n");
+  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY missing; upgrade not emailed");
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { authorization: `Bearer ${RESEND_API_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({ from: FROM_EMAIL, to, subject: "Your Nudged key is now Pro", text: body }),
+  });
+  if (!r.ok) throw new Error(`resend failed ${r.status}: ${await r.text()}`);
+}
+
+// A paid row was created for subId before the checkout event told us the email.
+// If that email has a free key, move the subscription onto the free row and drop the placeholder.
+async function mergeIntoFreeRow(subId: string, email: string): Promise<{ license_key: string; email: string; upgraded: true } | null> {
+  const { data: free } = await supabase.from("licenses").select("license_key").ilike("email", email).eq("plan", "free").maybeSingle();
+  if (!free) return null;
+  const { data: ph } = await supabase.from("licenses")
+    .select("license_key,stripe_customer_id,plan,status,current_period_end").eq("stripe_subscription_id", subId).maybeSingle();
+  if (!ph || ph.license_key === free.license_key) return null;
+  const { error: delErr } = await supabase.from("licenses").delete().eq("license_key", ph.license_key);
+  if (delErr) throw new Error(`placeholder delete failed: ${delErr.message}`);
+  const { error } = await supabase.from("licenses").update({
+    stripe_subscription_id: subId, stripe_customer_id: ph.stripe_customer_id,
+    plan: ph.plan === "free" ? "monthly" : ph.plan, status: ph.status, current_period_end: ph.current_period_end,
+    updated_at: new Date().toISOString(),
+  }).eq("license_key", free.license_key);
+  if (error) throw new Error(`merge into free row failed: ${error.message}`);
+  return { license_key: free.license_key, email, upgraded: true };
+}
+
 // Find or create the licence row for a subscription. Safe under concurrent events:
 // a duplicate insert (unique stripe_subscription_id) falls back to the existing row.
-async function ensureLicense(subId: string, fields: Record<string, unknown>): Promise<{ license_key: string; email: string }> {
+// If the email already holds a free-plan key, that row is upgraded in place so the
+// key the customer already pasted into /nudged:setup becomes their Pro key.
+async function ensureLicense(subId: string, fields: Record<string, unknown>): Promise<{ license_key: string; email: string; upgraded?: boolean }> {
   const sel = () => supabase.from("licenses").select("license_key,email").eq("stripe_subscription_id", subId).maybeSingle();
   const { data: existing } = await sel();
   if (existing) return existing as { license_key: string; email: string };
+
+  const email = typeof fields.email === "string" ? fields.email.trim().toLowerCase() : "";
+  if (email) {
+    const { data: free } = await supabase.from("licenses").select("license_key,email")
+      .ilike("email", email).eq("plan", "free").maybeSingle();
+    if (free) {
+      const { error } = await supabase.from("licenses")
+        .update({ stripe_subscription_id: subId, status: "active", plan: "monthly", updated_at: new Date().toISOString(), ...fields })
+        .eq("license_key", free.license_key).eq("plan", "free");
+      if (!error) return { license_key: free.license_key, email: free.email, upgraded: true };
+      if (error.code === "23505") { const { data: again } = await sel(); if (again) return again as { license_key: string; email: string }; }
+      throw new Error(`free→paid upgrade failed: ${error.message}`);
+    }
+  }
+
   const { data: key, error: keyErr } = await supabase.rpc("gen_license_key");
   if (keyErr || !key) throw new Error(`key generation failed: ${keyErr?.message}`);
   const { error } = await supabase.from("licenses").insert({ license_key: key, stripe_subscription_id: subId, status: "active", email: "", ...fields });
@@ -88,11 +143,14 @@ async function handle(event: Stripe.Event) {
       if (s.mode !== "subscription" || !s.subscription) return;
       const subId = typeof s.subscription === "string" ? s.subscription : s.subscription.id;
       const email = s.customer_details?.email ?? s.customer_email ?? "";
-      const lic = await ensureLicense(subId, { email, stripe_customer_id: String(s.customer) });
+      let lic = await ensureLicense(subId, { email, stripe_customer_id: String(s.customer) });
+      // customer.subscription.created usually lands first and creates a row with no email.
+      // If this email already holds a free key, fold the new row into it.
+      if (email && !lic.upgraded && !lic.email) lic = await mergeIntoFreeRow(subId, email) ?? lic;
       if (email && lic.email !== email) {
         await supabase.from("licenses").update({ email, updated_at: new Date().toISOString() }).eq("stripe_subscription_id", subId);
       }
-      if (email) await sendKeyEmail(email, lic.license_key);
+      if (email) await (lic.upgraded ? sendUpgradeEmail(email, lic.license_key) : sendKeyEmail(email, lic.license_key));
       return;
     }
     case "customer.subscription.created": {
