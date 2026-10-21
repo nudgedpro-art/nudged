@@ -13,16 +13,17 @@ Nudged reads your Gmail every hour for commitments ("we'll deliver Friday") and 
 Most things you're waiting on live in email threads you'll forget to reopen. Nudged turns them into post-its that update themselves.
 
 - One note per commitment or plan, with who, when, where, and what's changed.
-- Confirmed dates become calendar events, kept current as the thread evolves.
 - When a promise goes quiet, the note flags it so you can chase.
 - Type "watch for the chair delivery" on the board and it finds the thread.
-- Never sends, replies, archives or deletes email. Never deletes a calendar event.
+- Pro: confirmed dates become calendar events, kept current as the thread evolves, and a quiet thread gets a Gmail draft of the follow-up, written from the notes, for you to read and send.
+- Never sends, replies, archives or deletes email. Never deletes a calendar event. The most it ever writes is a draft, and only on Pro.
 
-Requires a Claude plan with the desktop app and Claude Code, plus the Gmail and Google Calendar connectors. CA$9/month after a 14-day free trial, HST included. Licence key arrives by email after subscribing.
+Requires a Claude plan with the desktop app and Claude Code, plus the Gmail and Google Calendar connectors. Free plan: one mailbox, up to 30 open notes, nudges on the board. Pro: CA$9/month or CA$90/year after a 14-day trial, HST included. Your licence key arrives by email from nudged.pro.
+
+**Data handling (questionnaire):** Reads Gmail and Google Calendar through the user's own Claude connectors; writes a hidden Gmail label, Google Calendar events it created, and (Pro) Gmail drafts. The only external call is a licence check to nudged.pro carrying the key alone. Nudged stores the user's email, licence key, plan and billing status; no mail or calendar content.
 
 **Install:**
-/plugin marketplace add nudgedpro-art/nudged
-/plugin install nudged@nudged
+/plugin install nudged --marketplace nudgedpro-art/nudged
 /nudged:setup
 
 **Repository:** https://github.com/nudgedpro-art/nudged

@@ -96,6 +96,7 @@ code{background:#f6f7f3;padding:2px 6px;border-radius:4px;font-size:15px}
 </main>
 <script>
 (function(){
+  var y=document.getElementById("subscribe-yearly"); if(y && /STRIPE_YEARLY/.test(y.getAttribute("href")||"")) y.hidden=true;
   var f=document.getElementById("freeform"), e=document.getElementById("freeemail"), b=document.getElementById("freebtn"), m=document.getElementById("freemsg");
   f.addEventListener("submit", function(ev){
     ev.preventDefault();
