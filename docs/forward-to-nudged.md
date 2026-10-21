@@ -92,11 +92,11 @@ RLS as in `0002_app_core.sql`: users select their own rows; only the service rol
   3. Find the user by `channel_links (whatsapp, from)`. None → reply once with the link instructions and stop.
   4. Licence: `licenses` row for the user's email. Plan `free` → `outcome='plan_blocked'`, reply with the upgrade line, delete the body, stop.
   5. If the message is a reply to Nudged's "who is that from?" (the previous `inbound_messages` row for this user has `outcome='needs_from'` within 24 h): set its `from_hint`, re-run extraction on it, stop.
-  6. Extraction: same two-step as `nudged-sync` (`_shared/extract.ts`, to be factored out of `nudged-sync/index.ts`): Haiku triage "is there a promise or dated plan here?", Sonnet extraction on a hit. Input: the body, the `from_hint`, the user's timezone, today's date. Output: the note shape, or nothing.
+  6. Extraction: same two-step as `nudged-sync` (`_shared/notes.ts`): Haiku triage "is there a promise or dated plan here?", Sonnet extraction on a hit. Input: the body, the `from_hint`, the user's timezone, today's date. Output: the note shape, or nothing.
   7. Match to an existing open note by other party + date, else insert with `source='whatsapp'`, `source_ref=inbound.id`. Calendar write as in sync (Pro only, always true here).
   8. Reply via `POST https://graph.facebook.com/v21.0/<PHONE_NUMBER_ID>/messages` with the outcome line. Replies inside the 24-hour service window are free under Meta's current pricing (verify before launch; it has changed twice).
   9. Set `processed_at`, `outcome`, null the `body`.
-- Always return 200 to Meta within 20 s; do the work after insert, before reply. If extraction fails, leave `body` for one retry by a scheduled sweep, then give up and null it.
+- Always return 200 to Meta within 20 s; do the work after insert, before reply. If extraction fails, leave `body` for one retry by a scheduled sweep, then give up and null it. The sweep is `select public.inbound_scrub_stale();` from pg_cron hourly; a retry pass (re-run `processInbound` on rows with `outcome='error'`, `attempts=1`, body present) can be added to `nudged-sync`'s cron call when there is volume.
 
 ### `ingest` (`verify_jwt=true`)
 
@@ -147,9 +147,9 @@ For plugin users on a Mac, iMessage and (with Text Message Forwarding on the iPh
 
 ## 10. Build checklist
 
-- [ ] `0004_channels.sql`
-- [ ] Factor extraction out of `nudged-sync` into `_shared/extract.ts`
-- [ ] `whatsapp-webhook`, `ingest`, `channel-link` functions
+- [x] `0004_channels.sql`
+- [x] Factor extraction out of `nudged-sync` into `_shared/notes.ts` (prompts, apply, helpers) and `_shared/plan.ts` (plan limits); `nudged-sync` now also honours the free plan (no calendar writes, 30 open notes)
+- [x] `whatsapp-webhook`, `ingest`, `channel-link` functions; `_shared/channels.ts` is the one pipeline both use
 - [ ] App: Settings → Connect WhatsApp; share-sheet via `expo-share-intent`; WhatsApp badge on notes
 - [ ] Meta app, number, webhook, secrets
 - [ ] Privacy page and consent screen wording
